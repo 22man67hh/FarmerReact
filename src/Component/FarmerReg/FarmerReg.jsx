@@ -14,29 +14,19 @@ import {
 } from "@mui/material";
 import { Field, Form, Formik } from "formik";
 import { useNavigate } from "react-router-dom";
-import {useDispatch, useSelector} from "react-redux"
-import * as Yup from 'yup'
+import { useDispatch, useSelector } from "react-redux";
+import * as Yup from 'yup';
 import { Checkbox } from '@mui/material';
-import { Image } from '@mui/icons-material';
+import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
 import { createFarmer } from '../State/Farmer/FarmerSlie';
 import { toast } from 'react-toastify';
 import { uploadImagetoCloud } from '../Home/Util/UploadTocloud';
-import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
 
 const FarmerReg = () => {
   const { email, name, jwt } = useSelector((state) => state.auth);
   const { error, farmer, success } = useSelector((state) => state.farmer);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  
-  const [uploadImage, setUploadImage] = useState(false);
-const[displayImg,setDisplayImg]=useState(false);
-  useEffect(() => {
-    if (success) {
-      toast.success(success);
-      navigate("/");
-    }
-  }, [success, navigate]);
 
   const productOptions = [
     "Dairy_Product",
@@ -48,6 +38,7 @@ const[displayImg,setDisplayImg]=useState(false);
 
   const initialValues = {
     name: name || "",
+    displayname:"",
     citizenno: "",
     houseno: "",
     phone: "",
@@ -58,23 +49,28 @@ const[displayImg,setDisplayImg]=useState(false);
     displayImages: [],
   };
 
-  const ValidationScheme = Yup.object({
+  const validationSchema = Yup.object({
     name: Yup.string().required("Full name is required"),
     citizenno: Yup.string().required("Citizenship No is required"),
     houseno: Yup.string().required("House no is required"),
-    phone: Yup.string().max(10).required("Phone no is required"),
-    facebook: Yup.string().required("Facebook URL is required"),
-    productType: Yup.array().min(1, "At least one product type must be selected"),
-    images: Yup.array().min(1, "At least one image is required"),
-    displayImages: Yup.array().min(1, "Please fill the required form")
+    phone: Yup.string()
+      .matches(/^[0-9]{10}$/, "Phone must be 10 digits")
+      .required("Phone no is required"),
+    facebook: Yup.string()
+      .url("Must be a valid URL (e.g., https://facebook.com/username)")
+      .required("Facebook URL is required"),
+    productType: Yup.array()
+      .min(1, "At least one product type must be selected"),
+    images: Yup.array()
+      .min(1, "At least one image is required"),
+    displayImages: Yup.array()
+      .min(1, "At least one display image is required")
   });
 
   const handleImageChange = async (e, values, setFieldValue) => {
     const file = e.target.files[0];
     if (!file) return;
-    setUploadImage(true);
     const imageUrl = await uploadImagetoCloud(file);
-    setUploadImage(false);
     setFieldValue("images", [...values.images, imageUrl]);
   };
 
@@ -87,39 +83,59 @@ const[displayImg,setDisplayImg]=useState(false);
   const handleDisplayImage = async (e, values, setFieldValue) => {
     const file = e.target.files[0];
     if (!file) return;
-    setDisplayImg(true);
     const imageUrl = await uploadImagetoCloud(file);
-    setDisplayImg(false);
     setFieldValue("displayImages", [...values.displayImages, imageUrl]);
   };
 
-  const handleRemovedisImage = (index, values, setFieldValue) => {
+  const handleRemoveDisplayImage = (index, values, setFieldValue) => {
     const updated = [...values.displayImages];
     updated.splice(index, 1);
     setFieldValue("displayImages", updated);
   };
 
+  useEffect(() => {
+    if (success) {
+      toast.success(success);
+      navigate("/");
+    }
+    if (error) {
+      toast.error(error);
+    }
+  }, [success, error, navigate]);
+
   return (
-    <div>
-      {error && <Typography variant="h4" color="error" className="text-center">{error}</Typography>}
-      <Typography variant="h4" className="text-center mb-6">Register Farmer Here</Typography>
+    <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
+      {error && (
+        <Typography variant="h6" color="error" sx={{ textAlign: 'center', mb: 2 }}>
+          {error}
+        </Typography>
+      )}
+      <Typography variant="h4" sx={{ textAlign: 'center', mb: 4 }}>
+        Register Farmer
+      </Typography>
 
       <Formik
         initialValues={initialValues}
-        validationSchema={ValidationScheme}
-        onSubmit={(values) => {
+        validationSchema={validationSchema}
+        onSubmit={(values, { setSubmitting }) => {
           dispatch(createFarmer({ jwt, data: values }));
+          setSubmitting(false);
         }}
       >
-        {({ values, setFieldValue, touched, errors }) => (
+        {({ values, setFieldValue, touched, errors, isSubmitting }) => (
           <Form>
-            {/* Image Upload */}
-            <FormControl fullWidth margin="normal">
-              <label className="relative" htmlFor="image-upload">
-                <span className="w-24 h-24 cursor-pointer flex items-center justify-center border rounded-md border-gray-600">
-                  <AddPhotoAlternateIcon />
-                </span>
-                {uploadImage && <CircularProgress size={24} className="absolute top-0 left-0" />}
+            {/* Images Upload */}
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>Farm Images</Typography>
+              <label htmlFor="image-upload">
+                <Button
+                  variant="outlined"
+                  component="span"
+                  startIcon={<AddPhotoAlternateIcon />}
+                  sx={{ mr: 2 }}
+                >
+                  Add Farm Images
+                </Button>
               </label>
               <input
                 id="image-upload"
@@ -129,99 +145,219 @@ const[displayImg,setDisplayImg]=useState(false);
                 hidden
               />
               {errors.images && touched.images && (
-                <Typography color="error" variant="caption">{errors.images}</Typography>
+                <Typography color="error" variant="caption" display="block">
+                  {errors.images}
+                </Typography>
               )}
-               <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 2 }}>
                 {values.images.map((img, index) => (
-                  <Box key={index} sx={{ position: "relative" }}>
-                    <img src={img} alt="upload" style={{ height: 100, borderRadius: 4 }} />
+                  <Box key={index} sx={{ position: 'relative' }}>
+                    <img
+                      src={img}
+                      alt={`farm-${index}`}
+                      style={{
+                        width: 100,
+                        height: 100,
+                        objectFit: 'cover',
+                        borderRadius: 1
+                      }}
+                    />
                     <Button
                       size="small"
                       color="error"
                       onClick={() => handleRemoveImage(index, values, setFieldValue)}
-                    >Remove</Button>
+                      sx={{
+                        position: 'absolute',
+                        top: 0,
+                        right: 0,
+                        minWidth: 30,
+                        height: 30
+                      }}
+                    >
+                      ×
+                    </Button>
                   </Box>
                 ))}
               </Box>
-              <label className="relative" htmlFor="image-upload">
-                <span className="w-24 h-24 cursor-pointer flex items-center justify-center border rounded-md border-gray-600">
-                  <AddPhotoAlternateIcon />
-                </span>
-                {displayImg && <CircularProgress size={24} className="absolute top-0 left-0" />}
+            </Box>
+
+            {/* Display Image Upload */}
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>Display Image</Typography>
+              <label htmlFor="display-image-upload">
+                <Button
+                  variant="outlined"
+                  component="span"
+                  startIcon={<AddPhotoAlternateIcon />}
+                  sx={{ mr: 2 }}
+                >
+                  Add Display Image
+                </Button>
               </label>
               <input
-                id="disimage-upload"
+                id="display-image-upload"
                 type="file"
                 accept="image/*"
                 onChange={(e) => handleDisplayImage(e, values, setFieldValue)}
                 hidden
               />
-              {errors.images && touched.images && (
-                <Typography color="error" variant="caption">{errors.images}</Typography>
+              {errors.displayImages && touched.displayImages && (
+                <Typography color="error" variant="caption" display="block">
+                  {errors.displayImages}
+                </Typography>
               )}
-              <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 2 }}>
                 {values.displayImages.map((img, index) => (
-                  <Box key={index} sx={{ position: "relative" }}>
-                    <img src={img} alt="upload" style={{ height: 100, borderRadius: 4 }} />
+                  <Box key={index} sx={{ position: 'relative' }}>
+                    <img
+                      src={img}
+                      alt={`display-${index}`}
+                      style={{
+                        width: 100,
+                        height: 100,
+                        objectFit: 'cover',
+                        borderRadius: 1
+                      }}
+                    />
                     <Button
                       size="small"
                       color="error"
-                      onClick={() => handleRemovedisImage(index, values, setFieldValue)}
-                    >Remove</Button>
+                      onClick={() => handleRemoveDisplayImage(index, values, setFieldValue)}
+                      sx={{
+                        position: 'absolute',
+                        top: 0,
+                        right: 0,
+                        minWidth: 30,
+                        height: 30
+                      }}
+                    >
+                      ×
+                    </Button>
                   </Box>
                 ))}
               </Box>
-            </FormControl>
+            </Box>
 
-            {/* Other Fields */}
-            <Field as={TextField} name="name" label="Full Name" fullWidth margin="normal"
-              error={touched.name && !!errors.name} helperText={touched.name && errors.name} />
-            <Field as={TextField} name="email" label="Email" fullWidth margin="normal" disabled />
-            <Field as={TextField} name="citizenno" label="Citizen No" fullWidth margin="normal"
-              error={touched.citizenno && !!errors.citizenno} helperText={touched.citizenno && errors.citizenno} />
-            <Field as={TextField} name="houseno" label="House No" fullWidth margin="normal"
-              error={touched.houseno && !!errors.houseno} helperText={touched.houseno && errors.houseno} />
-            <Field as={TextField} name="phone" label="Phone No" fullWidth margin="normal"
-              error={touched.phone && !!errors.phone} helperText={touched.phone && errors.phone} />
-            <Field as={TextField} name="facebook" label="Facebook URL" fullWidth margin="normal"
-              error={touched.facebook && !!errors.facebook} helperText={touched.facebook && errors.facebook} />
+             <Field
+              as={TextField}
+              name="displayname"
+              label="Farm Name(It must be unique)"
+              fullWidth
+              margin="normal"
+              error={touched.name && Boolean(errors.name)}
+              helperText={touched.name && errors.name}
+            />
+            <Typography variant="h6" sx={{ mb: 2 }}>Personal Information</Typography>
+            <Field
+              as={TextField}
+              name="name"
+              label="Full Name"
+              fullWidth
+              margin="normal"
+              error={touched.name && Boolean(errors.name)}
+              helperText={touched.name && errors.name}
+            />
+            <Field
+              as={TextField}
+              name="email"
+              label="Email"
+              fullWidth
+              margin="normal"
+              disabled
+            />
+            <Field
+              as={TextField}
+              name="citizenno"
+              label="Citizenship No"
+              fullWidth
+              margin="normal"
+              error={touched.citizenno && Boolean(errors.citizenno)}
+              helperText={touched.citizenno && errors.citizenno}
+            />
+            <Field
+              as={TextField}
+              name="houseno"
+              label="House No"
+              fullWidth
+              margin="normal"
+              error={touched.houseno && Boolean(errors.houseno)}
+              helperText={touched.houseno && errors.houseno}
+            />
+            <Field
+              as={TextField}
+              name="phone"
+              label="Phone No"
+              fullWidth
+              margin="normal"
+              error={touched.phone && Boolean(errors.phone)}
+              helperText={touched.phone && errors.phone}
+            />
+            <Field
+              as={TextField}
+              name="facebook"
+              label="Facebook URL"
+              fullWidth
+              margin="normal"
+              error={touched.facebook && Boolean(errors.facebook)}
+              helperText={touched.facebook && errors.facebook}
+            />
 
             {/* Product Types */}
-            <FormControl fullWidth margin="normal">
-              <InputLabel shrink>Product Type</InputLabel>
-              <FormGroup>
-                <div className='flex flex-wrap gap-3'>
-                  {productOptions.map(option => (
-                    <FormControlLabel
-                      key={option}
-                      control={
-                        <Checkbox
-                          checked={values.productType.includes(option)}
-                          onChange={(e) => {
-                            const checked = e.target.checked;
-                            setFieldValue("productType", checked
-                              ? [...values.productType, option]
-                              : values.productType.filter(p => p !== option));
-                          }}
-                        />
-                      }
-                      label={option.replace("_", " ")}
-                    />
-                  ))}
-                </div>
-              </FormGroup>
-              {touched.productType && errors.productType && (
-                <Typography color="error" variant="caption">{errors.productType}</Typography>
-              )}
-            </FormControl>
+            <Box sx={{ mt: 3, mb: 2 }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>Product Types</Typography>
+              <FormControl component="fieldset" fullWidth>
+                <FormGroup>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                    {productOptions.map((option) => (
+                      <FormControlLabel
+                        key={option}
+                        control={
+                          <Checkbox
+                            checked={values.productType.includes(option)}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setFieldValue(
+                                "productType",
+                                checked
+                                  ? [...values.productType, option]
+                                  : values.productType.filter((p) => p !== option)
+                              );
+                            }}
+                          />
+                        }
+                        label={option.replace(/_/g, ' ')}
+                      />
+                    ))}
+                  </Box>
+                </FormGroup>
+                {errors.productType && touched.productType && (
+                  <Typography color="error" variant="caption">
+                    {errors.productType}
+                  </Typography>
+                )}
+              </FormControl>
+            </Box>
 
-            <Button type="submit" variant="contained" fullWidth sx={{ mt: 3, p: 2 }}>Register</Button>
+            {/* Submit Button */}
+            <Button
+              type="submit"
+              variant="contained"
+              fullWidth
+              size="large"
+              sx={{ mt: 3, py: 2 }}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                "Register Farmer"
+              )}
+            </Button>
           </Form>
         )}
       </Formik>
-    </div>
+    </Box>
   );
 };
 
 export default FarmerReg;
-

@@ -30,6 +30,9 @@ import { AdminRoute } from '../Adminroute'
 import FetchFarmers from '../Admin/FetchFarmer/FetchFarmers'
 import FarmerDeta from '../Admin/FetchFarmer/FarmerDeta'
 import ChatPage from '../Admin/ChatPage'
+import RecentChatsList from '../Admin/Vehicle/RecentChatList'
+import FetchFarm from '../FarmerReg/FetchFarm'
+import FarmerD from '../FarmerReg/FarmD'
 
 function Croute() {
   return (
@@ -46,6 +49,8 @@ function Croute() {
         <Route path="/profile" element={<Layout><Profile/></Layout>}/>
         <Route path="/dashboard" element={<Dashboard><MainLanding/></Dashboard>}/>
         <Route path="/wages" element={<Dashboard><Wages/></Dashboard>}/>
+
+
         <Route path="/farmers/addProduct" element={<Dashboard><AddProduct/></Dashboard>}/>
         <Route path="/farmer/addAnimal" element={<Dashboard><AddAnimal/></Dashboard>}/>
         <Route path="/farmer/addAnimal/:id" element={<Dashboard><AddAnimal/></Dashboard>}/>
@@ -53,12 +58,16 @@ function Croute() {
         <Route path="/farmer/addVehicle" element={<Dashboard><AddVehicle/></Dashboard>}/>
         <Route path="/farmer/addVehicle/:id" element={<Dashboard><AddVehicle/></Dashboard>}/>
         <Route path="/farmer/cropPredict" element={<Dashboard><CropPredictorForm/></Dashboard>}/>
+        <Route path="/farmer" element={<Dashboard><FetchFarm/></Dashboard>}/>
 
         <Route path="/farmer/vehicleApplication" element={<Dashboard><Application/></Dashboard>}/>
         <Route path="/farmer/animalApplication" element={<Dashboard><AnimalApplication/></Dashboard>}/>
         <Route path="/farmer/predictCattle" element={<Dashboard><CattleDisease/></Dashboard>}/>
+        <Route path="/farmerss/:slug" element={<Dashboard><FarmerD/></Dashboard>}/>
+
         <Route path="/weather" element={<Layout><WeatherFore/></Layout>}/>
 <Route path='/messages/:farmerId' element={<ChatPage/>} />
+<Route path='/chatbox/:farmerId' element={<RecentChatsList/>} />
 <Route element={<AdminRoute />}>
   <Route path="/admin" element={<AdDashboard />}>
     <Route index element={<AdLandingPage />} />

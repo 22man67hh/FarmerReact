@@ -3,8 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { API_URL } from '@/Component/Config/api';
 import axios from 'axios';
 import { format, parseISO } from 'date-fns';
+import { useSelector } from 'react-redux';
 
 const ChatPage = () => {
+  const [socket,setSocket]=useState(null)
   const { farmerId } = useParams();
   const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
@@ -17,37 +19,136 @@ const ChatPage = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const [connectionStatus, setConnectionStatus] = useState('disconnected');
+
+const {farmer:currentUser}=useSelector((state)=>state.farmer)
+console.log("SenderId is",currentUser.id);
+console.log("receiverrId is",farmerId);
+useEffect(() => {
+  if (!currentUser?.id || !farmerId) return;
+
+  let ws;
+  let reconnectAttempts = 0;
+  const maxReconnectAttempts = 5;
+  const reconnectDelay = 3000; // 3 seconds
+
+  const connect = () => {
+    ws = new WebSocket(`${API_URL.replace('http', 'ws')}/ws/chat`);
+
+    ws.onopen = () => {
+        setConnectionStatus('connected');
+
+      reconnectAttempts = 0; 
+      console.log('WebSocket connected');
+      
+      // Add slight delay to ensure connection is fully established
+      setTimeout(() => {
+        ws.send(JSON.stringify({
+          type: 'auth',
+          token: localStorage.getItem('jwt'),
+          userId: currentUser.id,
+          chatId: `${currentUser.id}-${farmerId}`
+        }));
+      }, 200);
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        switch(data.type) {
+          case 'auth_success':
+            console.log('Authentication successful');
+            break;
+            
+          case 'auth_failed':
+            console.error('Authentication failed:', data.message);
+            ws.close();
+            break;
+            
+          case 'new_message':
+            setMessages(prev => {
+              if (!prev.some(msg => msg.id === data.message.id)) {
+                return [...prev, data.message];
+              }
+              return prev;
+            });
+            break;
+            
+          case 'error':
+            console.error('WebSocket error:', data.message);
+            break;
+            
+          default:
+            console.warn('Unknown message type:', data.type);
+        }
+      } catch (err) {
+        console.error('Error parsing WebSocket message:', err);
+      }
+    };
+
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
+    ws.onclose = (event) => {
+        setConnectionStatus('disconnected');
+
+      console.log(`WebSocket disconnected (code: ${event.code}, reason: ${event.reason || 'none'})`);
+      
+      if (event.code !== 1000 && reconnectAttempts < maxReconnectAttempts) {
+        reconnectAttempts++;
+        console.log(`Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})...`);
+        setTimeout(connect, reconnectDelay);
+      }
+    };
+
+    setSocket(ws);
+  };
+
+  connect();
+
+  return () => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.close(1000, 'Component unmounted');
+    }
+  };
+}, [currentUser?.id, farmerId]);
 
   useEffect(() => {
+            // console.log(chatResponse)
+
     const fetchData = async () => {
       try {
         setLoading(true);
         
         // Fetch farmer details
-        const farmerResponse = await axios.get(`${API_URL}/api/admin/Farmer/${farmerId}`, {
+        const farmerResponse = await axios.get(`${API_URL}/api/Farmers/${farmerId}`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('jwt')}`
           }
         });
         setFarmer(farmerResponse.data);
         
-        // Fetch chat history
-        const chatResponse = await axios.get(`${API_URL}/api/admin/messages/${farmerId}`, {
+        const chatResponse = await axios.get(`${API_URL}/api/message/${currentUser.id}`, {
+          params:{
+            receiverId:farmerId
+          },
           headers: {
             Authorization: `Bearer ${localStorage.getItem('jwt')}`
           }
         });
         setMessages(chatResponse.data);
-        
+        console.log(chatResponse)
       } catch (err) {
         setError(err.response?.data?.message || err.message);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchData();
-  }, [farmerId]);
+if(currentUser?.id){
+    fetchData();}
+  }, [farmerId,currentUser?.id]);
 
   // Auto-scroll to bottom of messages
   useEffect(() => {
@@ -97,52 +198,54 @@ useEffect(() => {
     }
   };
 
-  const handleSendMessage = async () => {
+  const toBase64 = file => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+  });
+
+
+ const handleSendMessage = async () => {
     if (!newMessage.trim() && !selectedImage) return;
 
     try {
-      let response;
-      
-        const formData = new FormData();
-        formData.append('farmerId', farmerId);
-        if (newMessage.trim()) {
-          formData.append('content', newMessage);
+      setUploadProgress(0);
+      const formData = new FormData();
+      formData.append('senderId', currentUser.id);
+      formData.append('receiverId', farmerId);
+      if (newMessage.trim()) formData.append('content', newMessage);
+      if (selectedImage) formData.append('image', selectedImage);
+
+      const response = await axios.post(`${API_URL}/api/send-messages`, formData, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('jwt')}`,
+          'Content-Type': 'multipart/form-data'
+        },
+        onUploadProgress: (progressEvent) => {
+          const progress = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setUploadProgress(progress);
         }
-        // if(selectedImage){
-        // formData.append('image', selectedImage);
-        // }
+      });
 
-        if(!selectedImage || selectedImage.size===0){
-          throw new Error('Selected file is empty')
-        }
-      formData.append('image', selectedImage, selectedImage.name);
+      // Send via WebSocket
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+          type: 'send_message',
+          message: response.data
+        }));
+      }
 
-        response = await axios.post(
-          `${API_URL}/api/admin/send-message`,
-          formData,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('jwt')}`,
-              'Content-Type': 'multipart/form-data'
-            },
-            
-            onUploadProgress: (progressEvent) => {
-              const progress = Math.round(
-                (progressEvent.loaded * 100) / progressEvent.total
-              );
-              setUploadProgress(progress);
-            }
-          }
-        );
-                  console.console.log(formData);
-
-      setMessages([...messages, response.data]);
- resetForm();
+      resetForm();
     } catch (err) {
       setError(err.response?.data?.message || err.message);
       setUploadProgress(0);
     }
   };
+
+
   const resetForm = () => {
   setNewMessage('');
   setSelectedImage(null);
@@ -152,6 +255,7 @@ useEffect(() => {
     fileInputRef.current.value = '';
   }
 };
+
 
   const renderMessageContent = (message) => {
     if (message.imageUrl) {
@@ -166,6 +270,8 @@ useEffect(() => {
         </div>
       );
     }
+              {console.log(message.imageUrl)}
+
     return <p>{message.content}</p>;
   };
 
@@ -187,6 +293,11 @@ useEffect(() => {
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
+      {connectionStatus === 'disconnected' && (
+  <div className="bg-yellow-100 text-yellow-800 p-2 text-center">
+    Connection lost. Attempting to reconnect...
+  </div>
+)}
       {/* Header */}
       <div className="bg-green-600 text-white p-4 shadow-md">
         <div className="flex items-center justify-between">
@@ -200,6 +311,7 @@ useEffect(() => {
             Back
           </button>
           <h1 className="text-xl font-bold">Chat with {farmer?.name}</h1>
+          <div className=''> <img src={farmer?.images} alt="" className='w-32 h-32 rounded-full shadow-2xl'/></div>
           <div className="w-8"></div>
         </div>
       </div>
@@ -224,13 +336,14 @@ useEffect(() => {
             return (
               <div 
                 key={index} 
-                className={`flex ${message.senderType === 'ADMIN' ? 'justify-end' : 'justify-start'}`}
+                className={`flex ${message.senderType === 'FARMER' ? 'justify-end' : 'justify-start'}`}
               >
                 <div 
-                  className={`max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 ${message.senderType === 'ADMIN' 
+                  className={`max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 ${message.senderType === 'FARMER' 
                     ? 'bg-green-500 text-white rounded-br-none' 
                     : 'bg-white text-gray-800 rounded-bl-none shadow'}`}
                 >
+
                   {renderMessageContent(message)}
                   <p className={`text-xs mt-1 ${message.senderType === 'ADMIN' ? 'text-green-100' : 'text-gray-500'}`}>
                     {formattedDate}
