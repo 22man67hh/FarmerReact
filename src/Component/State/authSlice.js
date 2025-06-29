@@ -7,7 +7,7 @@ export const loginUser=createAsyncThunk("auth/loginUser",async(credentials,thunk
         const res=await axios.post(`${API_URL}/auth/signin`,credentials);
         
         const data= res.data;
-        localStorage.setItem("jwt",data.jwt);
+         localStorage.setItem("jwt",data.jwt);
         return data;
     } catch (err) {
         return thunkAPI.rejectWithValue(err.response.data.message);
@@ -72,11 +72,7 @@ export const getUser=createAsyncThunk("auth/getUser", async (jwt,thunkAPI)=>{
             state.isLoading=false;
             state.jwt=action.payload.jwt;
             state.email=action.payload.email;
-  state.user = {
-          email: action.payload.email,
-          fullName: action.payload.fullName,
-          role: action.payload.role
-        };
+  state.user =action.payload; 
         state.isAdmin = action.payload.role === 'ROLE_ADMIN';
         state.name=action.payload.fullName;
             state.success="Login Successfull";

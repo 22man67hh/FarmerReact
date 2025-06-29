@@ -11,7 +11,7 @@ const Sidebar = () => {
     { to: '/admin/vehicles', label: 'Approve Vehicles', icon: <Car size={20} /> },
     { to: '/farmers/addProduct', label: 'Add Products', icon: <Leaf size={20} /> },
     { to: '/farmer', label: 'Users', icon: <Users size={20} /> },
-    { to: '/admin/orders', label: 'Orders', icon: <List size={20} /> },
+    { to: '/farmer/farmerBookings', label: 'Booking Application', icon: <List size={20} /> },
     { to: '/admin/update-model', label: 'Update ML Model', icon: <Upload size={20} /> },
     { to: '/admin/post-update', label: 'Post Update', icon: <Megaphone size={20} /> },
   ];

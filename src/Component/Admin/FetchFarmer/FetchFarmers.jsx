@@ -1,5 +1,6 @@
 import { API_URL } from '@/Component/Config/api';
 import React, { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 const FetchFarmers = () => {
@@ -10,8 +11,10 @@ const FetchFarmers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
+
+
+
   useEffect(() => {
-    console.log('Rendering FetchFarmers');
     const fetchFarmers = async () => {
       try {
         const response = await fetch(`${API_URL}/api/admin/getFarmer`, {

@@ -33,6 +33,11 @@ import ChatPage from '../Admin/ChatPage'
 import RecentChatsList from '../Admin/Vehicle/RecentChatList'
 import FetchFarm from '../FarmerReg/FetchFarm'
 import FarmerD from '../FarmerReg/FarmD'
+import FarmerVehicle from '../Booking/FarmerVehicle'
+import Booking from '../FarmerReg/Booking'
+import FarmerBookingsDashboard from '../FarmerReg/FarmerBookingDashboard'
+import CheckoutPage from '../FarmerReg/CheckoutPage'
+import FarmerJobCreationForm from '../FarmerReg/FarmerJobCreationForm'
 
 function Croute() {
   return (
@@ -42,6 +47,8 @@ function Croute() {
         <Route path="/account/:register" element={<Layout><Mainss/></Layout>}/>
         <Route path="/farmer/:slug" element={<Layout><FarmerDetails/></Layout>}/>
         <Route path="/account/:register" element={<Layout><Mainss/></Layout>}/>
+        <Route path="/booking" element={<Layout><Booking/></Layout>}/>
+        <Route path="/farmer/farmerBookings" element={<Dashboard><FarmerBookingsDashboard/></Dashboard>}/>
         <Route path="/account/farmerRegister" element={<Layout><VehicleBooking/></Layout>}/>
         <Route path="/vehicleBooking" element={<Layout><VehicleBooking/></Layout>}/>
         <Route path="/schedule" element={<Layout><ScheduleTask/></Layout>}/>
@@ -49,6 +56,7 @@ function Croute() {
         <Route path="/profile" element={<Layout><Profile/></Layout>}/>
         <Route path="/dashboard" element={<Dashboard><MainLanding/></Dashboard>}/>
         <Route path="/wages" element={<Dashboard><Wages/></Dashboard>}/>
+        <Route path="/farmer/registerWages" element={<Dashboard><FarmerJobCreationForm/></Dashboard>}/>
 
 
         <Route path="/farmers/addProduct" element={<Dashboard><AddProduct/></Dashboard>}/>
@@ -56,6 +64,7 @@ function Croute() {
         <Route path="/farmer/addAnimal/:id" element={<Dashboard><AddAnimal/></Dashboard>}/>
         <Route path="/farmer/viewProduct" element={<Dashboard><DisplayProduct/></Dashboard>}/>
         <Route path="/farmer/addVehicle" element={<Dashboard><AddVehicle/></Dashboard>}/>
+        <Route path="//checkout" element={<Layout><CheckoutPage/></Layout>}/>
         <Route path="/farmer/addVehicle/:id" element={<Dashboard><AddVehicle/></Dashboard>}/>
         <Route path="/farmer/cropPredict" element={<Dashboard><CropPredictorForm/></Dashboard>}/>
         <Route path="/farmer" element={<Dashboard><FetchFarm/></Dashboard>}/>
@@ -64,6 +73,7 @@ function Croute() {
         <Route path="/farmer/animalApplication" element={<Dashboard><AnimalApplication/></Dashboard>}/>
         <Route path="/farmer/predictCattle" element={<Dashboard><CattleDisease/></Dashboard>}/>
         <Route path="/farmerss/:slug" element={<Dashboard><FarmerD/></Dashboard>}/>
+        <Route path="/farmersVehicle" element={<Dashboard><FarmerVehicle/></Dashboard>}/>
 
         <Route path="/weather" element={<Layout><WeatherFore/></Layout>}/>
 <Route path='/messages/:farmerId' element={<ChatPage/>} />

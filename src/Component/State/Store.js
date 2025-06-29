@@ -15,13 +15,15 @@ import {
 } from "redux-persist";
 import storage from "redux-persist/lib/storage"; 
 import VehicleSlice from "./VehicleSlice/VehicleSlice";
+import BookingSlice from "./Booking/BookingSlice";
 
 // Combine all reducers
 const rootReducer = combineReducers({
   auth: authSlice,
   farmer: FarmerSile,
   products:ProductsSlice,
-  vehicles:VehicleSlice
+  vehicles:VehicleSlice,
+  booking:BookingSlice
 });
 
 // Configure persist
