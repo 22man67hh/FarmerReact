@@ -35,10 +35,12 @@ const FarmerJobCreationForm = () => {
     'Pruning',
     'Fertilizing',
     'Pest Control',
+     'Driving',
+    'Ploughing',
+    'Construction',
     'Other'
   ];
 
-  // Check authentication and token validity
   useEffect(() => {
     const token = localStorage.getItem("jwt");
     
@@ -122,7 +124,6 @@ const FarmerJobCreationForm = () => {
         throw new Error('Authentication token missing');
       }
 
-      // Create new object to avoid state reference issues
       const submissionData = {
         taskType: formData.taskType === 'Other' ? formData.otherTask : formData.taskType,
         workDate: formData.workDate,
@@ -131,27 +132,28 @@ const FarmerJobCreationForm = () => {
         quantity: formData.quantity ? Number(formData.quantity) : null,
         wageOffered: Number(formData.wageOffered),
         description: formData.description,
-        farmerId: farmer.id
+        // farmerId: farmer.id
       };
 
-      const response = await axios.post(
-        `${API_URL}/api/wages/register/work`,
-        submissionData,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          timeout: 10000
-        }
-      );
+const response = await axios.post(
+  `${API_URL}/api/wages/register/work`,
+  submissionData, 
+  {
+    params: {
+      farmerId: farmer?.id
+    },
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    timeout: 10000
+  }
+);
 
-      // Explicit success check
       if (response.status === 201) {
         setSuccess(true);
         resetForm();
         
-        // Clear success message after 3 seconds
         setTimeout(() => {
           setSuccess(false);
         }, 3000);

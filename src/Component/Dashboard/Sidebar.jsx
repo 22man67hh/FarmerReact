@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Home, Car, Users, Leaf, List, Upload, Megaphone, Menu, X
+  Home, Car, Users, Leaf, List, Upload, Megaphone, Menu, X,
+  FileUser,
+  NotebookPen
 } from 'lucide-react';
 const Sidebar = () => {
     const [isopen,setIsOpen]=useState(true);
@@ -12,6 +14,8 @@ const Sidebar = () => {
     { to: '/farmers/addProduct', label: 'Add Products', icon: <Leaf size={20} /> },
     { to: '/farmer', label: 'Users', icon: <Users size={20} /> },
     { to: '/farmer/farmerBookings', label: 'Booking Application', icon: <List size={20} /> },
+    { to: '/farmer/workRequest', label: 'Work Request', icon: <FileUser size={20} /> },
+    { to: '/farmer/registerWages', label: 'Register Work', icon: <NotebookPen size={20} /> },
     { to: '/admin/update-model', label: 'Update ML Model', icon: <Upload size={20} /> },
     { to: '/admin/post-update', label: 'Post Update', icon: <Megaphone size={20} /> },
   ];

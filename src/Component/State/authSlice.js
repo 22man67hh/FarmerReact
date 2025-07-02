@@ -2,6 +2,7 @@ import{createSlice,createAsyncThunk} from "@reduxjs/toolkit"
 import axios from "axios"
 import { API_URL } from "../Config/api";
 import { toast } from "react-toastify";
+import { resetWages } from "./Wages/Wages";
 export const loginUser=createAsyncThunk("auth/loginUser",async(credentials,thunkAPI)=>{
     try {
         const res=await axios.post(`${API_URL}/auth/signin`,credentials);

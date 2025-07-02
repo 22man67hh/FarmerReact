@@ -38,6 +38,9 @@ import Booking from '../FarmerReg/Booking'
 import FarmerBookingsDashboard from '../FarmerReg/FarmerBookingDashboard'
 import CheckoutPage from '../FarmerReg/CheckoutPage'
 import FarmerJobCreationForm from '../FarmerReg/FarmerJobCreationForm'
+import FarmerWorkRequests from '../Admin/FetchFarmer/FarmerWorkRequests'
+import CreateWorkerProfile from '../Profile/CreateWorkerProfile'
+import WorkerProfile from '../Profile/WorkerProfile'
 
 function Croute() {
   return (
@@ -54,12 +57,16 @@ function Croute() {
         <Route path="/schedule" element={<Layout><ScheduleTask/></Layout>}/>
         <Route path="/plantdisease" element={<Layout><PlantDiseases/></Layout>}/>
         <Route path="/profile" element={<Layout><Profile/></Layout>}/>
+        <Route path="/createWork" element={<Layout><CreateWorkerProfile/></Layout>}/>
+        <Route path="/workerProfile" element={<Layout><WorkerProfile/></Layout>}/>
         <Route path="/dashboard" element={<Dashboard><MainLanding/></Dashboard>}/>
-        <Route path="/wages" element={<Dashboard><Wages/></Dashboard>}/>
+        <Route path="/wages" element={<Layout><Wages/></Layout>}/>
+
         <Route path="/farmer/registerWages" element={<Dashboard><FarmerJobCreationForm/></Dashboard>}/>
 
 
         <Route path="/farmers/addProduct" element={<Dashboard><AddProduct/></Dashboard>}/>
+        <Route path="/farmer/workRequest" element={<Dashboard><FarmerWorkRequests/></Dashboard>}/>
         <Route path="/farmer/addAnimal" element={<Dashboard><AddAnimal/></Dashboard>}/>
         <Route path="/farmer/addAnimal/:id" element={<Dashboard><AddAnimal/></Dashboard>}/>
         <Route path="/farmer/viewProduct" element={<Dashboard><DisplayProduct/></Dashboard>}/>

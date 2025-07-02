@@ -2,27 +2,28 @@ import { Card, CardContent } from '@/components/ui/card';
 import React, { useEffect, useState } from 'react';
 import pp from '@/Component/asset/about.jpg';
 import im from '@/image/3267-124850.gif';
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchLoggedInFarmer } from '../State/Farmer/FarmerSlie';
+import { getWagesProfile } from '../State/Wages/Wages';
 
 const Profile = () => {
   const dispatch = useDispatch();
   const { farmer } = useSelector((state) => state.farmer);
-
+  const {user}=useSelector((state)=>state.auth);
+const [checkingWages,setCheckingWages]=useState(false)
   const [vehicles, setVehicles] = useState([]);
   const [products, setProducts] = useState([]);
   const [wages, setWages] = useState([]);
   const [activeTab, setActiveTab] = useState('vehicles');
-
+const navigate=useNavigate();
   const jwt = localStorage.getItem('jwt');
-  const userId = localStorage.getItem('userId');
+const userId=user?.id;  
 
   if (!jwt) {
     return <Navigate to="/" state={{ message: 'Please login to continue' }} />;
   }
 
-  // Fetch farmer info once
   useEffect(() => {
     if (!farmer) {
       dispatch(fetchLoggedInFarmer());
@@ -67,6 +68,25 @@ const Profile = () => {
     fetchTabData();
   }, [activeTab, jwt, userId, vehicles.length, products.length, wages.length]);
 
+
+const handleWorkerProfileCheck = async (worker) => {
+  setCheckingWages(true);
+  try {
+    const result = await dispatch(getWagesProfile(userId)).unwrap();
+    if (result) {
+      navigate("/workerProfile",{state:result});
+    } else {
+      navigate("/createWork");
+    }
+    console.log(result);
+    console.log(result.length);
+  } catch (error) {
+    console.error("Error fetching wages profile:", error);
+    navigate("/createWork");
+  } finally {
+    setCheckingWages(false);
+  }
+};
   return (
     <>
       <div className="mt-6 max-w-full flex flex-col md:flex-row gap-x-20 items-start px-4">
@@ -75,7 +95,16 @@ const Profile = () => {
         </div>
         <Card className="w-full md:w-2/3">
           <CardContent className="py-6">
-            <h3 className="text-center font-bold">Hello {farmer?.name   || 'Loading...' }  ({ ( farmer?.user.role.replace("ROLE_",""))})</h3>
+            <h3 className="text-center font-bold">Hello {farmer?.name   || 'Loading...' }  ({ ( farmer?.user?.role.replace("ROLE_",""))})</h3>
+<span>
+  <button
+    onClick={handleWorkerProfileCheck}
+    disabled={checkingWages}
+    className="text-blue-600 hover:underline disabled:opacity-50"
+  >
+    {checkingWages ? "Checking..." : "Worker Profile"}
+  </button> (Register Worker)
+</span>
             {farmer && (
               <div className="flex flex-col md:flex-row items-center gap-6 mt-6">
                 <img
@@ -120,7 +149,7 @@ const Profile = () => {
                     <span className="font-semibold">House No:</span> {farmer.houseno || 'N/A'}
                   </p>
                   <p>
-                    <span className="font-semibold">Total Revenue:</span> {farmer.product.totalRevenue || 'N/A'}
+                    <span className="font-semibold">Total Revenue:</span> {farmer.product?.totalRevenue || 'N/A'}
                   </p>
                 </div>
               </div>

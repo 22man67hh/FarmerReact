@@ -16,6 +16,7 @@ import {
 import storage from "redux-persist/lib/storage"; 
 import VehicleSlice from "./VehicleSlice/VehicleSlice";
 import BookingSlice from "./Booking/BookingSlice";
+import Wages from "./Wages/Wages";
 
 // Combine all reducers
 const rootReducer = combineReducers({
@@ -23,7 +24,8 @@ const rootReducer = combineReducers({
   farmer: FarmerSile,
   products:ProductsSlice,
   vehicles:VehicleSlice,
-  booking:BookingSlice
+  booking:BookingSlice,
+  wage:Wages
 });
 
 // Configure persist

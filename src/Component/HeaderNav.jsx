@@ -8,22 +8,28 @@ import { Link, useNavigate } from "react-router-dom";
 import { logout } from "./State/authSlice";
 import { fetchFarmers, fetchLoggedInFarmer, resetFarmer } from "./State/Farmer/FarmerSlie";
 import useUpdateLocation from "./FarmerReg/useLocationUpdater";
+import { resetWages } from "./State/Wages/Wages";
+import { resetBooking } from "./State/Booking/BookingSlice";
 
 const HeaderNav = () => {
 
 
 
   
-const {jwt,name,user}=useSelector((state)=>state.auth);
+const {jwt,user}=useSelector((state)=>state.auth);
 const isLoggedIn=!!jwt;
+const name=user?.fullName;
 useUpdateLocation(isLoggedIn,jwt);
 const {farmer}=useSelector((state)=>state.farmer);
-const first=name?name.slice(0,2).toUpperCase():"";
+const first=user?name.slice(0,2).toUpperCase():"";
 const navigate=useNavigate();
 const dispatch=useDispatch();
 const handleLogout=()=>{
   dispatch(resetFarmer());
 dispatch(logout());
+dispatch(resetWages())
+dispatch(resetFarmer())
+dispatch(resetBooking())
 navigate("/");
 }
 // console.log("Farmer name",farmer);
@@ -134,6 +140,9 @@ setCurrentTime(timeString);
               <li className="px-3 py-2 hover:bg-green-200 ">
                 <Link to="/seed">Crop Prediction</Link>
               </li>
+              <li className="px-3 py-2 hover:bg-green-200 ">
+                <Link to="/wages">Wages</Link>
+              </li>
             </ul>
           )}
         </li>
@@ -184,7 +193,7 @@ setCurrentTime(timeString);
           <div
             className="hover:underline focus:outline-none cursor-pointer "
           >
-             {jwt && name ? (
+             {jwt && user ? (
       <div
         className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold bg-blue-500"
         title={name}
@@ -234,6 +243,9 @@ setCurrentTime(timeString);
               </li>
               <li className="px-3 py-2 hover:bg-green-200 ">
                 <Link to="/crop" onClick={toggleService}>Crop Prediction</Link>
+              </li>
+              <li className="px-3 py-2 hover:bg-green-200 ">
+                <Link to="/wages" onClick={toggleService}>Wages</Link>
               </li>
             </ul>
           )}
