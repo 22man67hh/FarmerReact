@@ -53,6 +53,32 @@ export const getAllWages = createAsyncThunk(
     }
   }
 );
+export const getRecommend = createAsyncThunk(
+  "/api/getRecommend",
+  async (workRequestId, { getState, rejectWithValue }) => {
+    try {
+      const jwt = getState().auth.jwt;
+      if (!jwt) {
+        return rejectWithValue("Invalid token. Please login again.");
+      }
+      
+      const res = await axios.get(`${API_URL}/api/wages/recommend`,{
+        params:{
+          workRequestId
+        }
+      , 
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+    });
+
+      return res.data;
+    } catch (error) {
+      const message = error.response?.data?.message || "Failed to fetch works.";
+      return rejectWithValue(message);
+    }
+  }
+);
 
 const Wages=createSlice({
     name:"Wages",
@@ -99,6 +125,20 @@ const Wages=createSlice({
           state.success="Works Fetched successfully"
         })
         .addCase(getAllWages.rejected,(state,action)=>{
+          state.error=action.payload
+           state.isLoading = false; 
+          state.success=null
+        })
+        .addCase(getRecommend.pending,(state)=>{
+          state.isLoading=true;
+          state.works=[];
+        })
+        .addCase(getRecommend.fulfilled,(state,action)=>{
+          state.error=null;
+          state.works=action.payload||[];
+          state.success="Works Fetched successfully"
+        })
+        .addCase(getRecommend.rejected,(state,action)=>{
           state.error=action.payload
            state.isLoading = false; 
           state.success=null

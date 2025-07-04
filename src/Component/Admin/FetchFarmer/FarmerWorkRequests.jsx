@@ -9,92 +9,104 @@ const FarmerWorkRequests = () => {
   const [requests, setRequests] = useState([]);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [applications, setApplications] = useState([]);
+  const [selectedApplication, setSelectedApplication] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-
-
   useEffect(() => {
-    
-const fetchRequests = async () => {
-  try {
-    const token = localStorage.getItem("jwt");
-    const response = await axios.get(`${API_URL}/api/wages/registered/Work`, {
-      params: {
-        id: farmer?.id
-      },
-      headers: { 
-        Authorization: `Bearer ${token}` 
+    const fetchRequests = async () => {
+      try {
+        const token = localStorage.getItem("jwt");
+        const response = await axios.get(`${API_URL}/api/wages/registered/Work`, {
+          params: {
+            id: farmer?.id
+          },
+          headers: { 
+            Authorization: `Bearer ${token}` 
+          }
+        });
+        console.log(response.data)
+        setRequests(response.data);
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to fetch requests');
+      } finally {
+        setLoading(false);
       }
-    });
-    console.log(response.data)
-    setRequests(response.data);
-  } catch (err) {
-    setError(err.response?.data?.message || 'Failed to fetch requests');
-  } finally {
-    setLoading(false);
-  }
-};
-fetchRequests();
-}, [farmer?.id]); 
-
-
+    };
+    fetchRequests();
+  }, [farmer?.id]); 
 
   const fetchApplications = async (requestId) => {
     try {
       const token = localStorage.getItem("jwt");
-      const response = await axios.get(`${API_URL}/api/wages/requests/${requestId}/applications`, {
+      const response = await axios.get(`${API_URL}/api/dailywages/workrequest/application`, 
+      {
+        params: {
+          workId: requestId,
+          farmerId: farmer?.id
+        },
         headers: { Authorization: `Bearer ${token}` }
       });
       setApplications(response.data);
       setSelectedRequest(requestId);
+      setSelectedApplication(null); 
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch applications');
     }
   };
+        console.log(selectedApplication)
 
-  const handleDeactivate = async (requestId) => {
+
+  const handleDeactivate = async (workId) => {
     try {
       const token = localStorage.getItem("jwt");
-      await axios.patch(`${API_URL}/api/wages/requests/${requestId}/deactivate`, {}, {
+      await axios.patch(`${API_URL}/api/dailywages/workrequest/${workId}/deactivate`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRequests(requests.map(req => 
-        req.id === requestId ? { ...req, isActive: false } : req
+        req.id === workId ? { ...req, isActive: false } : req
       ));
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to deactivate request');
     }
   };
 
-  const handleDelete = async (requestId) => {
+  const handleDelete = async (workId) => {
     if (!window.confirm('Are you sure you want to delete this request?')) return;
     
     try {
       const token = localStorage.getItem("jwt");
-      await axios.delete(`${API_URL}/api/wages/requests/${requestId}`, {
+      await axios.delete(`${API_URL}/api/dailywages/workrequest/${workId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setRequests(requests.filter(req => req.id !== requestId));
+      setRequests(requests.filter(req => req.id !== workId));
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to delete request');
     }
   };
 
-  const handleApplicationAction = async (applicationId, action) => {
-    try {
-      const token = localStorage.getItem("jwt");
-      await axios.patch(`${API_URL}/api/wages/applications/${applicationId}/${action}`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setApplications(applications.map(app => 
-        app.id === applicationId ? { ...app, status: action.toUpperCase() } : app
-      ));
-    } catch (err) {
-      setError(err.response?.data?.message || `Failed to ${action} application`);
-    }
-  };
+const handleApplicationAction = async (applicationId, action) => {
+  try {
+    const jwt = localStorage.getItem("jwt");
+console.log("app Id",applicationId)
+    await axios.put(`${API_URL}/api/dailywages/approveWorkss`, null, {
+      params: {
+        workId: applicationId
+      },
+      headers: {
+        Authorization: `Bearer ${jwt}`
+      }
+    });
+
+    setApplications(applications.map(app =>
+      app.id === applicationId ? { ...app, status: action.toUpperCase() } : app
+    ));
+  } catch (err) {
+    setError(err.response?.data?.message || `Failed to ${action} application`);
+  }
+};
+
 
   if (loading) return <div className="text-center py-8">Loading...</div>;
 
@@ -137,8 +149,8 @@ fetchRequests();
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${request.status=='ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                        {request.status=='ACTIVE' ? 'Active' : 'Inactive'}
+                        ${request.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                        {request.status === 'ACTIVE' ? 'Active' : 'Inactive'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -147,8 +159,8 @@ fetchRequests();
                           e.stopPropagation();
                           handleDeactivate(request.id);
                         }}
-                        disabled={!request.status=='ACTIVE'}
-                        className={`mr-2 ${request.status=='ACTIVE' ? 'text-yellow-600 hover:text-yellow-900' : 'text-gray-400 cursor-not-allowed'}`}
+                        disabled={request.status !== 'ACTIVE'}
+                        className={`mr-2 ${request.status === 'ACTIVE' ? 'text-yellow-600 hover:text-yellow-900' : 'text-gray-400 cursor-not-allowed'}`}
                       >
                         Deactivate
                       </button>
@@ -179,11 +191,16 @@ fetchRequests();
               {selectedRequest ? 'Applications' : 'Select a request to view applications'}
             </h3>
           </div>
-          <div className="divide-y divide-gray-200">
-            {selectedRequest ? (
-              applications.length > 0 ? (
-                applications.map((application) => (
-                  <div key={application.id} className="p-4">
+          
+          {selectedRequest ? (
+            applications.length > 0 ? (
+              <div className="divide-y divide-gray-200">
+                {applications.map((application) => (
+                  <div 
+                    key={application.id} 
+                    className={`p-4 cursor-pointer ${selectedApplication?.id === application.id ? 'bg-blue-50' : ''}`}
+                    onClick={() => setSelectedApplication(application)}
+                  >
                     <div className="flex justify-between items-start">
                       <div>
                         <h4 className="font-medium">{application.worker.name}</h4>
@@ -200,13 +217,19 @@ fetchRequests();
                     {application.status === 'PENDING' && (
                       <div className="mt-3 flex space-x-2">
                         <button
-                          onClick={() => handleApplicationAction(application.id, 'approve')}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleApplicationAction(application.id, 'approve');
+                          }}
                           className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
                         >
                           Approve
                         </button>
                         <button
-                          onClick={() => handleApplicationAction(application.id, 'reject')}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleApplicationAction(application.id, 'reject');
+                          }}
                           className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
                         >
                           Reject
@@ -214,14 +237,31 @@ fetchRequests();
                       </div>
                     )}
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-gray-500">No applications for this request</div>
-              )
+                ))}
+              </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">Select a request to view applications</div>
-            )}
-          </div>
+              <div className="text-center py-8 text-gray-500">No applications for this request</div>
+            )
+          ) : (
+            <div className="text-center py-8 text-gray-500">Select a request to view applications</div>
+          )}
+
+          {/* Worker Details Section */}
+          {selectedApplication && (
+            <div className="p-4 border-t border-gray-200 bg-gray-50">
+              <h4 className="font-bold text-lg mb-3">Worker Details</h4>
+              <div className="space-y-2">
+                <p><span className="font-semibold">Name:</span> {selectedApplication.worker.name}</p>
+                <p><span className="font-semibold">Email:</span> {selectedApplication.worker.email}</p>
+                <p><span className="font-semibold">Phone:</span> {selectedApplication.worker.contact || 'Not provided'}</p>
+                <p><span className="font-semibold">Address:</span> {selectedApplication.worker.address || 'Not provided'}</p>
+                <p><span className="font-semibold">Experience:</span> {selectedApplication.worker.experience || 'Not specified'}</p>
+                <p><span className="font-semibold">Skills:</span> {selectedApplication.worker.skills || 'Not specified'}</p>
+                <p><span className="font-semibold">Rate:</span> {selectedApplication.worker.rateperday || 'Not specified'}</p>
+                <p><span className="font-semibold">Application Message:</span> {selectedApplication.message}</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

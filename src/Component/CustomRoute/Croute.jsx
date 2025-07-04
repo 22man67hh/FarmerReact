@@ -41,6 +41,7 @@ import FarmerJobCreationForm from '../FarmerReg/FarmerJobCreationForm'
 import FarmerWorkRequests from '../Admin/FetchFarmer/FarmerWorkRequests'
 import CreateWorkerProfile from '../Profile/CreateWorkerProfile'
 import WorkerProfile from '../Profile/WorkerProfile'
+import WorkerApplications from '../WageApplication/WorkerApplications'
 
 function Croute() {
   return (
@@ -61,6 +62,8 @@ function Croute() {
         <Route path="/workerProfile" element={<Layout><WorkerProfile/></Layout>}/>
         <Route path="/dashboard" element={<Dashboard><MainLanding/></Dashboard>}/>
         <Route path="/wages" element={<Layout><Wages/></Layout>}/>
+        <Route path="/workerApplication" element={<Layout><WorkerApplications
+        /></Layout>}/>
 
         <Route path="/farmer/registerWages" element={<Dashboard><FarmerJobCreationForm/></Dashboard>}/>
 

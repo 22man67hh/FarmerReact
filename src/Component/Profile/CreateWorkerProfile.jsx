@@ -31,14 +31,15 @@ const CreateWorkerProfile = () => {
     value: type,
     label: type
   }));
-
+// console.log(user)
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [formData, setFormData] = useState({
-    name: '',
+    name: user?.fullName|| '',
     contact: '',
     rateperday: '',
     experience: '',
-    address: '',
+    email:'',
+    loction: '',
     skills: '',
     profileImage: '' 
   });
@@ -241,6 +242,7 @@ userId:user?.id
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
+                disabled
                 required
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               />
@@ -253,6 +255,18 @@ userId:user?.id
                 type="tel"
                 name="contact"
                 value={formData.contact}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              />
+            </div>
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
@@ -295,8 +309,8 @@ userId:user?.id
               <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
               <input
                 type="text"
-                name="address"
-                value={formData.address}
+                name="loction"
+                value={formData.loction}
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"

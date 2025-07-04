@@ -2,12 +2,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import React, { useEffect, useState } from 'react';
 import pp from '@/Component/asset/about.jpg';
 import im from '@/image/3267-124850.gif';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchLoggedInFarmer } from '../State/Farmer/FarmerSlie';
 import { getWagesProfile } from '../State/Wages/Wages';
+import { toast } from 'react-toastify';
 
 const Profile = () => {
+  const location=useLocation();
+  const message=location?.state?.message;
   const dispatch = useDispatch();
   const { farmer } = useSelector((state) => state.farmer);
   const {user}=useSelector((state)=>state.auth);
@@ -19,6 +22,12 @@ const [checkingWages,setCheckingWages]=useState(false)
 const navigate=useNavigate();
   const jwt = localStorage.getItem('jwt');
 const userId=user?.id;  
+
+useEffect(()=>{
+  if(message){
+    toast.info(message)
+  }
+},[message])
 
   if (!jwt) {
     return <Navigate to="/" state={{ message: 'Please login to continue' }} />;
@@ -87,6 +96,8 @@ const handleWorkerProfileCheck = async (worker) => {
     setCheckingWages(false);
   }
 };
+
+// console.log(user)
   return (
     <>
       <div className="mt-6 max-w-full flex flex-col md:flex-row gap-x-20 items-start px-4">
@@ -95,7 +106,7 @@ const handleWorkerProfileCheck = async (worker) => {
         </div>
         <Card className="w-full md:w-2/3">
           <CardContent className="py-6">
-            <h3 className="text-center font-bold">Hello {farmer?.name   || 'Loading...' }  ({ ( farmer?.user?.role.replace("ROLE_",""))})</h3>
+            <h3 className="text-center font-bold">Hello {farmer?.name   || 'Loading...' }  ({ (user?.role.replace("ROLE_",""))})</h3>
 <span>
   <button
     onClick={handleWorkerProfileCheck}

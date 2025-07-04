@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiEdit2, FiSave, FiX, FiUser, FiPhone, FiMapPin, FiDollarSign, FiAward, FiTool } from 'react-icons/fi';
+import { Email } from '@mui/icons-material';
 
 const WorkerProfile = () => {
   const location = useLocation();
@@ -171,6 +172,23 @@ const WorkerProfile = () => {
                   <p className="text-gray-700">{profile.contact}</p>
                 )}
               </div>
+                  
+              <div className="flex items-center">
+                <Email className="text-gray-500 mr-3" />
+                {isEditing ? (
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border-b border-gray-300 focus:border-blue-500 focus:outline-none"
+                  />
+                ) : (
+                  <p className="text-gray-700">{profile.email}</p>
+                )}
+              </div>
+
+          
 
               <div className="flex items-center">
                 <FiMapPin className="text-gray-500 mr-3" />

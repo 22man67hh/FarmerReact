@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
 import {
   TextField,
   Button,
-  Switch,
-  FormControlLabel,
   MenuItem,
   Select,
   InputLabel,
@@ -17,10 +13,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Snackbar,
   Alert,
   Tabs,
@@ -28,19 +20,18 @@ import {
   Box,
   Chip,
   Avatar,
-  TablePagination
+  TablePagination,
+  CircularProgress
 } from '@mui/material';
-import { LocationOn, Person, Work, Phone, Star, Edit, Delete, Search } from '@mui/icons-material';
+import { LocationOn, Work, Phone, Edit, Search, SettingsApplicationsOutlined } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
-import { getAllWages } from './State/Wages/Wages';
-import { useNavigate } from 'react-router-dom';
+import { getAllWages, getRecommend, getWagesProfile } from './State/Wages/Wages';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from './Config/api';
 
 const Wages = () => {
   // State management
-  const [openDialog, setOpenDialog] = useState(false);
-  const [currentWorker, setCurrentWorker] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [activeTab, setActiveTab] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
@@ -48,13 +39,19 @@ const Wages = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [loading, setLoading] = useState(false);
+  const [applying, setApplying] = useState(false);
 
-  // Redux state
-  const { works } = useSelector((state) => state.wage);
+  const { works, worker } = useSelector((state) => state.wage);
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const jwt = localStorage.getItem("jwt");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user?.id) {
+      dispatch(getWagesProfile(user.id));
+    }
+  }, [dispatch, user]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,7 +61,11 @@ const Wages = () => {
       }
       try {
         setLoading(true);
+        if (worker && worker.length > 0) {
+        await dispatch(getRecommend());
+      } else {
         await dispatch(getAllWages());
+      }
       } finally {
         setLoading(false);
       }
@@ -81,26 +82,38 @@ const Wages = () => {
     setPage(0);
   };
 
-  const handleEdit = async (worker) => {
+  const handleApply = async (work) => {
     try {
-if(!jwt){
-        navigate("/", { state: { message: "Token not valid, please login again" } });
-}      const res = await axios.post(
-    `${API_URL}/api/dailywages/book/work`,
-      {  
-        params: {  
-          workRequestId: worker?.id,
-          workerId: user?.id
-        },
-        headers: {
-          Authorization: `Bearer ${jwt}`
-        }
-      }
-        
-
-      );
-    
+      setApplying(true);
       
+      if (!worker?.id) {
+        navigate("/profile", {
+          state: { message: "You need to create a worker profile before applying" }
+        });
+        return;
+      }
+
+      if (!jwt) {
+        navigate("/", { 
+          state: { message: "Token not valid, please login again" } 
+        });
+        return;
+      }
+
+   const response = await axios.post(
+  `${API_URL}/api/dailywages/workss`,
+  null,  
+  {
+    params: {  
+      workRequestId: work.id,
+      workerId: worker?.id
+    },
+    headers: {
+      Authorization: `Bearer ${jwt}`
+    }
+  }
+);
+
       setSnackbar({
         open: true,
         message: 'Successfully applied for work',
@@ -108,31 +121,34 @@ if(!jwt){
       });
 
     } catch (error) {
-      console.error(error);
+      console.error('Application error:', error);
       setSnackbar({
         open: true,
-        message: error.response?.data?.message || 'Failed to apply for work',
+        message: error.response?.data?.message || 
+               error.message || 
+               'Failed to apply for work',
         severity: 'error'
       });
+    } finally {
+      setApplying(false);
     }
   };
 
-  const filteredWorkers = works?.filter(worker => {
-    if (!worker) return false;
+  const filteredWorkers = works?.filter(work => {
+    if (!work) return false;
     
     const matchesSearch = 
-      (worker.description?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-       worker.taskType?.toLowerCase().includes(searchTerm.toLowerCase()));
+      (work.description?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+       work.taskType?.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesAvailability = 
       availabilityFilter === 'all' || 
-      (availabilityFilter === 'available' && worker.status === 'ACTIVE') || 
-      (availabilityFilter === 'unavailable' && worker.status !== 'ACTIVE');
+      (availabilityFilter === 'available' && work.status === 'ACTIVE') || 
+      (availabilityFilter === 'unavailable' && work.status !== 'ACTIVE');
     
     return matchesSearch && matchesAvailability;
   }) || [];
 
-  // Paginated workers
   const paginatedWorkers = filteredWorkers.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
@@ -141,6 +157,7 @@ if(!jwt){
   return (
     <div className="container mx-auto px-4 py-8">
       <Paper elevation={3} className="p-6 mb-8">
+        <div className='flex flex-row-reverse'><span className='bg-green-600 px-4 py-2 rounded-2xl text-white font-bold ring hover:bg-green-200 hover:cursor-pointer hover:text-white'><Link to="/workerApplication">Your Application</Link> </span></div>
         <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
           <Tab label="Works List" icon={<Work />} />
         </Tabs>
@@ -159,7 +176,7 @@ if(!jwt){
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
-                    setPage(0); // Reset to first page when searching
+                    setPage(0);
                   }}
                 />
               </div>
@@ -170,7 +187,7 @@ if(!jwt){
                     value={availabilityFilter}
                     onChange={(e) => {
                       setAvailabilityFilter(e.target.value);
-                      setPage(0); // Reset to first page when changing filter
+                      setPage(0);
                     }}
                     label="Availability"
                     className="min-w-[150px]"
@@ -203,72 +220,77 @@ if(!jwt){
                   {loading ? (
                     <TableRow>
                       <TableCell colSpan={10} className="text-center py-8">
-                        <div className="flex justify-center">
-                          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-                        </div>
+                        <CircularProgress />
                       </TableCell>
                     </TableRow>
                   ) : paginatedWorkers.length > 0 ? (
-                    paginatedWorkers.map((worker) => (
-                      <TableRow key={worker.id} hover>
+                    paginatedWorkers.map((work) => (
+                      <TableRow key={work.id} hover>
                         <TableCell>
                           <div className="flex items-center">
                             <Avatar className="mr-3 bg-blue-500">
-                              {worker.taskType?.charAt(0)}
+                              {work.taskType?.charAt(0)}
                             </Avatar>
                             <div>
-                              <div className="font-medium">{worker.taskType}</div>
+                              <div className="font-medium">{work.taskType}</div>
                               <div className="text-sm text-gray-500 flex items-center">
                                 <Phone className="mr-1" fontSize="small" />
-                                {worker.farmer?.displayname}
+                                {work.farmer?.displayname || 'N/A'}
                               </div>
                             </div>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
-                            {worker.taskType?.split(',')?.map((skill, index) => (
-                              <Chip key={index} label={skill.trim()} size="small" />
+                            {work.taskType?.split(',').map((skill, index) => (
+                              <Chip 
+                                key={index} 
+                                label={skill.trim()} 
+                                size="small" 
+                              />
                             ))}
                           </div>
                         </TableCell>
-                        <TableCell>NPR {worker.wageOffered}</TableCell>
-                        <TableCell>{new Date(worker.workDate).toLocaleDateString()}</TableCell>
+                        <TableCell>NPR {work.wageOffered || '0'}</TableCell>
+                        <TableCell>
+                          {work.workDate ? new Date(work.workDate).toLocaleDateString() : 'N/A'}
+                        </TableCell>
                         <TableCell>
                           <Chip
-                            label={worker.status === 'ACTIVE' ? 'Available' : 'Unavailable'}
-                            color={worker.status === 'ACTIVE' ? 'success' : 'error'}
+                            label={work.status === 'ACTIVE' ? 'Available' : 'Unavailable'}
+                            color={work.status === 'ACTIVE' ? 'success' : 'error'}
                             size="small"
                           />
                         </TableCell>
                         <TableCell className="max-w-[200px] truncate">
-                          {worker.description}
+                          {work.description || 'No description'}
+                        </TableCell>
+                        <TableCell>{work.quantity || '0'}</TableCell>
+                        <TableCell>{work.duration || '0'} hours</TableCell>
+                        <TableCell>
+                         <div className="flex items-center text-blue-500">
+  <LocationOn className="mr-1" />
+  <a
+    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(work.location)}`}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="truncate max-w-[120px] hover:underline"
+  >
+    {work.location || 'Location not specified'}
+  </a>
+</div>
                         </TableCell>
                         <TableCell>
-                          {worker.quantity}
-                        </TableCell>
-                        <TableCell>
-                          {worker.duration} hours
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center text-blue-500 cursor-pointer">
-                            <LocationOn className="mr-1" />
-                            <span className="truncate max-w-[120px]">{worker?.location}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              color="primary"
-                              startIcon={<Edit />}
-                              onClick={() => handleEdit(worker)}
-                              disabled={worker.status !== 'ACTIVE'}
-                            >
-                              Apply
-                            </Button>
-                          </div>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            color="primary"
+                            startIcon={<Edit />}
+                            onClick={() => handleApply(work)}
+                            disabled={work.status !== 'ACTIVE' || applying}
+                          >
+                            {applying ? 'Applying...' : 'Apply'}
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))
@@ -300,11 +322,11 @@ if(!jwt){
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
         <Alert 
-          onClose={() => setSnackbar({ ...snackbar, open: false })} 
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} 
           severity={snackbar.severity}
           sx={{ width: '100%' }}
         >
