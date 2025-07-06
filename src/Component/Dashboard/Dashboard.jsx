@@ -7,24 +7,27 @@ import { fetchLoggedInFarmer } from '../State/Farmer/FarmerSlie'
 import { useDispatch } from 'react-redux'
 import { useLocation } from 'react-router-dom'
 import { toast } from 'react-toastify'
+import { logout } from '../State/authSlice'
 
 const Dashboard = ({children}) => {
   const location=useLocation();
   const message=location.state?.message;
-  useEffect(()=>{
-    if(message){
-      toast.error(message)
-    }
-  },[message])
+ 
   const dispatch=useDispatch();
   const jwt=localStorage.getItem("jwt")
 useEffect(()=>{
   if(jwt){
   dispatch(fetchLoggedInFarmer());
-//  const data= dispatch(fetchFarmers());
-//  console.log("Farmers nearby ",data)
+
   }
 },[dispatch,jwt])
+ useEffect(()=>{
+    if(message){
+      toast.error(message)
+      dispatch(logout())
+      
+    }
+  },[message])
   return (
     <div className='flex'>
       <Sidebar/>

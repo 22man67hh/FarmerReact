@@ -42,6 +42,12 @@ import FarmerWorkRequests from '../Admin/FetchFarmer/FarmerWorkRequests'
 import CreateWorkerProfile from '../Profile/CreateWorkerProfile'
 import WorkerProfile from '../Profile/WorkerProfile'
 import WorkerApplications from '../WageApplication/WorkerApplications'
+import { PendingRetailerRoute, RetailerRoute } from '../Weather/RetailerRoute'
+import RetailerDashboard from '../Retailer/RetailerDashboard/RetailerDashboard'
+import RetailerLanding from '../Retailer/RetailerDashboard/RetailerLanding'
+import RetailerRegistrationForm from '../Retailer/RetailerDashboard/RetailerRegistrationForm'
+import ApplicationStatus from '../Retailer/RetailerDashboard/ApplicationStatus'
+import AdminApplications from '../Admin/AdminApplication'
 
 function Croute() {
   return (
@@ -93,9 +99,26 @@ function Croute() {
     <Route index element={<AdLandingPage />} />
     <Route path="dashboard" element={<AdLandingPage />} />
     <Route path="farmers" element={<FetchFarmers />} />
+    <Route path="retailerApplication" element={<AdminApplications />} />
     <Route path="adfarmer/:slug" element={<FarmerDeta />} /> 
   </Route>
 </Route>
+
+
+      <Route path="/retailer/register" element={<RetailerRegistrationForm />} />
+
+ <Route element={<PendingRetailerRoute />}>
+        <Route path="/retailer/application-status" element={<ApplicationStatus />} />
+      </Route>
+
+<Route element={<RetailerRoute/>}>
+<Route path="/retailer" element={<RetailerDashboard/>}>
+<Route index element={<RetailerLanding/>}/>
+<Route path='dashboard' element={<RetailerDashboard/>} />
+
+</Route>
+</Route>
+
 </Routes>
       <Auth/>
     </div>

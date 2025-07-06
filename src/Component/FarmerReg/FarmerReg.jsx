@@ -48,7 +48,11 @@ const FarmerReg = () => {
     productType: [],
     images: [],
     displayImages: [],
-    location: "",
+    location: {
+      latitude:'',
+      longitude:'',
+      address:''
+    },
     coordinates: null
   };
 

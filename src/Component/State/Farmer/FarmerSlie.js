@@ -89,7 +89,7 @@ extraReducers:(builder)=>{
         state.success = null;    })
     .addCase(createFarmer.fulfilled,(state,action)=>{
         state.isLoading=false;
-        state.user=action.payload.user;
+        state.user=action.payload;
         state.success="Farmer Created SuccessFully";
     })
     .addCase(createFarmer.rejected,(state,action)=>{

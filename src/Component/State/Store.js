@@ -17,6 +17,7 @@ import storage from "redux-persist/lib/storage";
 import VehicleSlice from "./VehicleSlice/VehicleSlice";
 import BookingSlice from "./Booking/BookingSlice";
 import Wages from "./Wages/Wages";
+import RetailerSlice from "./Retailer/RetailerSlice"
 
 // Combine all reducers
 const rootReducer = combineReducers({
@@ -25,6 +26,7 @@ const rootReducer = combineReducers({
   products:ProductsSlice,
   vehicles:VehicleSlice,
   booking:BookingSlice,
+  retailer:RetailerSlice,
   wage:Wages
 });
 
@@ -32,7 +34,7 @@ const rootReducer = combineReducers({
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: ["auth","farmer"], 
+  whitelist: ["auth","farmer","retailer"], 
 
 };
 

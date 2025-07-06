@@ -19,7 +19,7 @@ export const signUpUser=createAsyncThunk("auth/signUpUser",async({credentials,na
     try {
         const res=await axios.post(`${API_URL}/auth/signup`,credentials);
         if(res.data){
-            navigate("/account/login");
+            navigate("/");
         }
         return res.data;
     } catch (err) {
@@ -50,7 +50,8 @@ export const getUser=createAsyncThunk("auth/getUser", async (jwt,thunkAPI)=>{
         name:null,
         success:null,
         farmer:null,
-        isAdmin:false
+        isAdmin:false,
+        isRetailer:false,
     },
     reducers:{
         logout:(state)=>{
@@ -61,7 +62,12 @@ export const getUser=createAsyncThunk("auth/getUser", async (jwt,thunkAPI)=>{
             state.name=null,
             state.role=null,
             state.isAdmin=false,
+            state.isRetailer=false,
             localStorage.removeItem("jwt");
+        },
+        resetAuthState:(state)=>{
+              state.success = null;
+      state.error = null;
         }
     },
     extraReducers:(builder)=>{
@@ -75,6 +81,7 @@ export const getUser=createAsyncThunk("auth/getUser", async (jwt,thunkAPI)=>{
             state.email=action.payload.email;
   state.user =action.payload; 
         state.isAdmin = action.payload.role === 'ROLE_ADMIN';
+        state.isRetailer = action.payload.role === 'ROLE_RETAILER';
         state.name=action.payload.fullName;
             state.success="Login Successfull";
         })
@@ -108,5 +115,5 @@ export const getUser=createAsyncThunk("auth/getUser", async (jwt,thunkAPI)=>{
       });
     }
  })
- export const {logout}=authslice.actions;
+ export const {logout,resetAuthState}=authslice.actions;
  export default authslice.reducer
