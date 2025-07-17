@@ -20,7 +20,6 @@ const AdSidebar = () => {
     //  
     { to: '/admin/post-update', label: 'Post Update', icon: <Megaphone size={20} /> },
 {
-  to: '/logout',
   label: 'Logout',
   icon: <LogOutIcon size={20} onClick={() => dispatch(logout())} />
 }

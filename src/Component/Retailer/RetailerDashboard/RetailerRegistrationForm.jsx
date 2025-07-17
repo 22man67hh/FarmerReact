@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
@@ -15,6 +15,7 @@ import {
   TextField, 
   Checkbox 
 } from '@mui/material';
+import { logout } from '@/Component/State/authSlice';
 
 const RetailerRegistrationForm = () => {
   const [selectedPosition, setSelectedPosition] = useState(null);
@@ -35,6 +36,7 @@ const retailerData=state?.existingData;
     panNumber: editMode ? retailerData?.panNumber : '',
     phone: editMode ? retailerData?.phone : '',
     panImage: editMode ? retailerData?.panImageUrl : null,
+    citizenImage:editMode ? retailerData?.citizenImageUrl : null,
     description: editMode ? retailerData?.description : '',
     location: editMode ? retailerData?.location : {
       latitude: 27.7172,
@@ -47,17 +49,22 @@ const retailerData=state?.existingData;
   };
 const userId=user?.id;
 
+useEffect(() => {
+  if (user?.role !== "ROLE_RETAILER") {
+    navigate("/", { state: { message: "You are not authorized to access this page." } });
+    dispatch(logout());
+  }
+}, [user, navigate, dispatch]);
+
+console.log("Use",user?.role)
+
   useEffect(()=>{
 if(userId){
   dispatch(getRetailer({userId:userId}))
 }
   },[dispatch,userId])
 
-// useEffect(()=>{
-//   if(retailer){
-//     navigate("/retailer/application-status")
-//   }
-// },[retailer,navigate])
+
   const validationSchema = Yup.object().shape({
     ownerName: Yup.string().required('Owner name is required'),
     ownerEmail: Yup.string()
@@ -99,9 +106,15 @@ if(userId){
       panImageUrl = await uploadImagetoCloud(values.panImage);
     }
 
+       let citizenmageUrl = values.panImage;
+    if (values.citizenmageUrl && typeof values.citizenmageUrl !== 'string') {
+      citizenmageUrl = await uploadImagetoCloud(values.citizenmageUrl);
+    }
+
     const registrationData = {
    ...values,
    panImageUrl:panImageUrl,
+   citizenmageUrl:citizenmage,
    location:values.location ||{
      latitude: 27.7172,
         longitude: 85.3240,
@@ -282,6 +295,37 @@ isEdit   }));
                           <img
                             src={values.panImage}
                             alt="PAN Preview"
+                            style={{ maxWidth: '100%', maxHeight: 200 }}
+                          />
+                        </Box>
+                      )}
+                    </div>
+
+
+
+                      <div>
+                      <Typography variant="subtitle1" gutterBottom>
+                        Citizenship/NID Image <span className="text-red-500">*</span>
+                      </Typography>
+                      <input
+                        type="file"
+                        name="citizenImage"
+                        onChange={(e) => handleImageChange(e, setFieldValue)}
+                        accept="image/*"
+                        className={`w-full px-3 py-2 border rounded-md ${
+                          touched.panImage && errors.panImage ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      />
+                      {errors.citizenImage && touched.citizenImage && (
+                        <Typography color="error" variant="caption">
+                          {errors.citizenImage}
+                        </Typography>
+                      )}
+                      {values.citizenImage && typeof values.citizenImage === 'string' && (
+                        <Box mt={2}>
+                          <img
+                            src={values.citizenImage}
+                            alt="ID Preview"
                             style={{ maxWidth: '100%', maxHeight: 200 }}
                           />
                         </Box>

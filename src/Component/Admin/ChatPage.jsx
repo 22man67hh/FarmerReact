@@ -25,7 +25,6 @@ const ChatPage = () => {
 
   const { farmer: currentUser } = useSelector((state) => state.farmer);
 
-  // WebSocket connection with modern Client
   useEffect(() => {
     if (!currentUser?.id || !farmerId) return;
 
@@ -48,7 +47,6 @@ const ChatPage = () => {
           setMessages(prev => [...prev, data]);
         });
 
-        // Register user
         client.publish({
           destination: '/app/chat.addUser',
           body: JSON.stringify({
@@ -70,7 +68,6 @@ const ChatPage = () => {
       }
     });
 
-    // Fallback to SockJS if WebSocket is not available
     client.webSocketFactory = () => new SockJS(`${API_URL}/ws`);
     
     client.activate();

@@ -1,4 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
+import CircularProgress from '@mui/material/CircularProgress';
 import {
   FormControl,
   InputLabel,
@@ -12,15 +13,16 @@ import {
   Dialog,
   Input
 } from '@mui/material';
+import VideoCameraBackIcon from '@mui/icons-material/VideoCameraBack';
 import { Formik, Form, ErrorMessage, Field } from 'formik';
 import React, { useEffect, useState } from 'react';
 import * as Yup from 'yup';
-import { uploadImagetoCloud } from '../Home/Util/UploadTocloud';
+import { uploadImagetoCloud, uploadVideoToCloud } from '../Home/Util/UploadTocloud';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
-import { Addanimal, AddProducts } from '../State/Products/ProductsSlice';
+import { Addanimal, AddProducts, resetProductstate, UpdateAnimal } from '../State/Products/ProductsSlice';
 import * as faceapi from 'face-api.js';
 import LeafletMap from './LeafletMap';
 
@@ -45,6 +47,7 @@ const AddAnimal = () => {
     calves:eddata?.calves|| '',
     produceMilk:eddata?.produceMilk|| false,
     gender:eddata?.gender|| '',
+    video:eddata?.video||null,
   };
 
   const { error, products, success } = useSelector((state) => state.products);
@@ -52,6 +55,8 @@ const AddAnimal = () => {
   const jwt = localStorage.getItem("jwt");
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const [videoUploading, setVideoUploading] = useState(false);
+const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formValues, setFormValues] = useState(initialValues);
   const [predictionPrice, setPredictionPrice] = useState(null);
@@ -97,19 +102,37 @@ const AddAnimal = () => {
   }, [formValues]);
 
   useEffect(() => {
-    if (success) toast.success(success);
-  }, [success]);
+    if (success){ toast.success(success);
+    dispatch(resetProductstate())
+
+    }return () => {
+      dispatch(resetProductstate());
+    }
+  }, [success,dispatch]);
 
   useEffect(() => {
-    if (error) toast.error(error);
-  }, [error]);
+ if (error) {
+    toast.error(error);
+    dispatch(clearStatus());
+  }  return () => {
+    if (error) dispatch(clearStatus());
+  };  }, [error,dispatch]);
 
   const gender = ['MALE', 'FEMALE'];
   const animal = ['COW', 'BUFFALO'];
 
   const validationSchema = Yup.object({
+  video: Yup.mixed()
+    .test('fileSize', 'Video must be less than 30MB', (value) => {
+      if (!value || typeof value === 'string') return true;
+      return value.size <= 30 * 1024 * 1024;
+    })
+    .test('fileType', 'Only MP4, MOV, and AVI videos are allowed', (value) => {
+      if (!value || typeof value === 'string') return true;
+      return ['video/mp4', 'video/quicktime', 'video/x-msvideo'].includes(value.type);
+    }),
     animalName: Yup.string().required('Animal Name is required'),
-    image: Yup.array().min(1, 'At least one image is required'),
+    image: Yup.array().min(1, 'At least one image  and one video is required'),
     age: Yup.string().required('Age is required'),
     calves: Yup.string().required('Calves count is required'),
     gender: Yup.string().required('Gender is required'),
@@ -122,10 +145,28 @@ const AddAnimal = () => {
     setFieldValue('image', updated);
   };
 
-  const handleSubmit = (values) => {
-    dispatch(Addanimal({ credentials: values, jwt, navigate }));
+ const handleSubmit = (values) => {
+  setIsSubmitting(true);
+  try{
+    if (id) {
+      dispatch(UpdateAnimal({ 
+      
+        credentials: values, 
+        jwt, 
+        navigate ,
+          id
+      }));
+    } else {
+      dispatch(Addanimal({ 
+        credentials: values, 
+        jwt, 
+        navigate 
+      }));
+    }
+  }finally {
+    setIsSubmitting(false);
+  }
   };
-
   return (
     <div className='mx-auto max-w-4xl p-4 ml-3 sm:ml-0'>
       <Card>
@@ -162,11 +203,17 @@ setFieldValue('location', {
       fetchAddress();
     }
   }, [selectedCoords]);
+
+  
+
+  
               return (
                 <Form className='space-y-4'>
                   {/* Image Upload */}
                   <FormControl fullWidth margin='normal'>
                     <label htmlFor='image' className='cursor-pointer inline-block'>
+                      <span>Animal Image</span>
+                      <br />
                       <AddPhotoAlternateIcon fontSize='large' />
                     </label>
                     <input
@@ -224,6 +271,90 @@ setFieldValue('location', {
                     </Box>
                   )}
 
+
+<FormControl fullWidth margin='normal'>
+  <label htmlFor='video' className='cursor-pointer inline-block'>
+    <span>Add Animal Video (max 30MB)</span>
+    <br />
+    <Button
+      variant='contained'
+      component='span'
+      startIcon={
+        videoUploading ? (
+          <CircularProgress size={20} color="inherit" />
+        ) : (
+          <VideoCameraBackIcon />
+        )
+      }
+      disabled={videoUploading}
+    >
+      {videoUploading ? 'Uploading...' : 'Upload Video'}
+    </Button>
+  </label>
+  <input
+    id='video'
+    name='video'
+    type='file'
+    accept='video/mp4,video/quicktime,video/x-msvideo'
+    className='hidden'
+    disabled={videoUploading}
+    onChange={async (e) => {
+      const file = e.currentTarget.files[0];
+      if (!file) return;
+
+      try {
+        setVideoUploading(true);
+        
+        if (file.size > 30 * 1024 * 1024) {
+          throw new Error('Video exceeds 30MB limit');
+        }
+        
+        if (!['video/mp4', 'video/quicktime', 'video/x-msvideo'].includes(file.type)) {
+          throw new Error('Invalid video format');
+        }
+
+        const url = await uploadVideoToCloud(file);
+        setFieldValue('video', url);
+        toast.success('Video uploaded successfully');
+      } catch (error) {
+        toast.error(`Video upload failed: ${error.message}`);
+        setFieldValue('video', null);
+      } finally {
+        setVideoUploading(false);
+        e.target.value = ''; // Reset input to allow re-uploading the same file
+      }
+    }}
+  />
+  <ErrorMessage name='video' component='div' className='text-red-500 text-sm' />
+</FormControl>
+              {/* Improved Video Preview */}
+              {values.video && (
+                <Box mt={2} className="relative">
+                  <div className="aspect-w-16 aspect-h-9 w-full max-w-2xl mx-auto">
+                    <video 
+                      controls 
+                      className="w-full rounded-lg border"
+                      poster={values.image[0]} // Use first image as poster
+                    >
+                      <source src={values.video} type="video/mp4" />
+                      Your browser does not support videos.
+                    </video>
+                  </div>
+                  <Button
+                    type='button'
+                    variant='outlined'
+                    color='error'
+                    size='small'
+                    onClick={() => {
+                      setFieldValue('video', null);
+                      toast.info('Video removed');
+                    }}
+                    className="mt-2"
+                  >
+                    Remove Video
+                  </Button>
+                </Box>
+              )}
                   {/* Animal Type */}
                   <FormControl fullWidth margin='normal'>
                     <InputLabel id='animal-label'>Animal Type</InputLabel>
@@ -308,10 +439,16 @@ setFieldValue('location', {
       address: e.target.value,
     })
   }
-/>
-                  <Button type='submit' className='w-full text-gray-900 m-4' variant='contained'>
-                    Submit
-                  </Button>
+/><Button 
+  type='submit' 
+  className='w-full text-gray-900 m-4' 
+  variant='contained'
+  disabled={isSubmitting}
+>
+  {isSubmitting ? (
+    <CircularProgress size={24} color="inherit" />
+  ) : id ? 'Update Animal' : 'Add Animal'}
+</Button>
                 </Form>
               );
             }}

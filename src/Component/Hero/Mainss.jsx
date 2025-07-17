@@ -21,6 +21,7 @@ const Mainss = () => {
       
       <HeroMain/>
       <Services/>
+<hr className="border-t-4 border-green-500" />
       <FarmCard/>
       {/* <Products/> */}
     </div>

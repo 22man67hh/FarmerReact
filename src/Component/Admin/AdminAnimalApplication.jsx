@@ -1,11 +1,11 @@
-import { GetAnimalApplication, resetProductstate } from '../State/Products/ProductsSlice';
+import { GetAdminAnimalApplication, GetAnimalApplication, resetProductstate } from '../State/Products/ProductsSlice';
 import { Button } from '@mui/material';
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
-const AnimalApplication = () => {
+const AdminAnimalApplication = () => {
   const { isLoading, error, success, animals = [],farmer } = useSelector((state) => state.products);
   const jwt = localStorage.getItem("jwt");
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ const AnimalApplication = () => {
     if (!jwt) {
       navigate("/");
     } else {
-      dispatch(GetAnimalApplication());
+      dispatch(GetAdminAnimalApplication());
     }
   }, [dispatch, jwt, navigate]);
 
@@ -37,6 +37,36 @@ const AnimalApplication = () => {
     return <p>Loading animal applications...</p>;
   }
 
+
+   const handleApproveReject = async (status) => {
+      try {
+        setProcessing(true);
+        const endpoint=activeSubTab=='Animals'
+        ?  `${API_URL}/api/admin/updateAnimals/${selectedApp.id}` : `${API_URL}/api/admin/updateVehicle/${selectedApp.id}`;
+  
+        await axios.put(
+          endpoint,
+          { status },
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('jwt')}`
+            }
+          }
+        );
+  
+          const updatedFarmer = { ...farmer };
+        const appType = activeSubTab === 'Animals' ? 'pendingAnimals' : 'pendingVehicles';
+        updatedFarmer[appType] = updatedFarmer[appType].filter(app => app.id !== selectedApp.id);
+        
+        setFarmer(updatedFarmer);
+        setSelectedApp(null);
+      } catch (err) {
+        setError(err.response?.data?.message || err.message);
+      } finally {
+        setProcessing(false);
+      }
+    };
+  
   return (
     <div className="p-6">
       <h2 className="text-2xl font-semibold mb-4">Animal Applications</h2>
@@ -92,9 +122,25 @@ const AnimalApplication = () => {
                 <Button
                   variant="contained"
                   color="primary"
-                  onClick={() => navigate(`/farmer/addAnimal/${booking.id}`, { state: { animals: booking } })}
+                  onClick={() => handleApproveReject('Approved')}
                 >
-                  Edit
+                  Approve
+                </Button>
+
+                  <Button
+                  variant="contained"
+                  color="Danger"
+                  onClick={() => handleApproveReject('Rejected')}
+                >
+                  Reject
+                </Button>
+
+                    <Button
+                  variant="contained"
+                  color="Secondary"
+                  onClick={() => navigate('adfarmer/' + booking.farmerId )}
+                >
+                  Farmer Profile
                 </Button>
               </div>
             </div>
@@ -105,4 +151,4 @@ const AnimalApplication = () => {
   );
 };
 
-export default AnimalApplication;
+export default AdminAnimalApplication;

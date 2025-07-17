@@ -5,6 +5,7 @@ import {
   FileUser,
   NotebookPen
 } from 'lucide-react';
+import { GiBuffaloHead } from "react-icons/gi";
 const Sidebar = () => {
     const [isopen,setIsOpen]=useState(true);
     const toggleBar=()=>{setIsOpen(!isopen)}
@@ -12,6 +13,8 @@ const Sidebar = () => {
     { to: '/admin', label: 'Dashboard', icon: <Home size={20} /> },
     { to: '/admin/vehicles', label: 'Approve Vehicles', icon: <Car size={20} /> },
     { to: '/farmers/addProduct', label: 'Add Products', icon: <Leaf size={20} /> },
+        { to: '/farmer/addAnimal', label: 'Add Animals', icon: <GiBuffaloHead size={20} /> },
+
     { to: '/farmer', label: 'Users', icon: <Users size={20} /> },
     { to: '/farmer/farmerBookings', label: 'Booking Application', icon: <List size={20} /> },
     { to: '/farmer/workRequest', label: 'Work Request', icon: <FileUser size={20} /> },

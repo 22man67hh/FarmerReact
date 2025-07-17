@@ -38,24 +38,22 @@ export const fetchLoggedInFarmer = createAsyncThunk(
 );
 export const fetchFarmers = createAsyncThunk(
   "/api/fetchFarmers",
-  async (_, {getState, rejectWithValue }) => {
+  async (_, { getState, rejectWithValue }) => {
     try {
       const jwt = getState().auth.jwt;
+      let res;
 
-      if (!jwt) {
-        return rejectWithValue("JWT token not found. Please login again.");
+      if (jwt) {
+        res = await axios.get(`${API_URL}/api/nearbyFarmers`, {
+          headers: { Authorization: `Bearer ${jwt}` }
+        });
+      } else {
+        res = await axios.get(`${API_URL}/getFarmers`);
       }
-
-      const res = await axios.get(`${API_URL}/api/nearbyFarmers`, {
-        headers: {
-          Authorization: `Bearer ${jwt}`,
-        },
-      });
 
       return res.data;
     } catch (error) {
-      const message =
-        error.response?.data?.message || "Failed to fetch farmers.";
+      const message = error.response?.data?.message || "Failed to fetch farmers.";
       return rejectWithValue(message);
     }
   }
@@ -71,14 +69,14 @@ const FarmerSile=createSlice({
         isLoading:false,
         error:null,
         success:null,
-        farmers:null,
+        farmers:[],
     },
     reducers:{
         resetFarmer:(state)=>{
             state.farmer=null,
             state.isLoading=false,
             state.error=null,
-            state.farmers=null
+            state.farmers=[]
         }
     },
 extraReducers:(builder)=>{
@@ -91,6 +89,7 @@ extraReducers:(builder)=>{
         state.isLoading=false;
         state.user=action.payload;
         state.success="Farmer Created SuccessFully";
+        state.farmer=action.payload;
     })
     .addCase(createFarmer.rejected,(state,action)=>{
         state.isLoading=false;
@@ -103,7 +102,6 @@ extraReducers:(builder)=>{
     .addCase(fetchLoggedInFarmer.fulfilled,(state,action)=>{
         state.isLoading=false;
         state.farmer=action.payload;
-        // state.farmer=action.payload.farmer;
     })
     .addCase(fetchLoggedInFarmer.rejected,(state,action)=>{
         state.isLoading=false;
@@ -115,7 +113,7 @@ extraReducers:(builder)=>{
         state.success = null;    })
     .addCase(fetchFarmers.fulfilled,(state,action)=>{
         state.isLoading=false;
-        state.farmers=action.payload;
+        state.farmers = Array.isArray(action.payload) ? action.payload : [];
     })
     .addCase(fetchFarmers.rejected,(state,action)=>{
         state.isLoading=false;

@@ -61,30 +61,6 @@ const FarmerDeta = () => {
     fetchFarmerDetails();
   }, [slug]);
 
- const handleSendMessage = async () => {
-    try {
-      setProcessing(true);
-      await axios.post(
-        `${API_URL}/api/admin/send-message`,
-        {
-          farmerId: farmer.id,
-          message: message,
-          applicationId: selectedApp?.id
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('jwt')}`
-          }
-        }
-      );
-      setChatModalOpen(false);
-      setMessage('');
-    } catch (err) {
-      setError(err.response?.data?.message || err.message);
-    } finally {
-      setProcessing(false);
-    }
-  };
 
  const handleApproveReject = async (status) => {
     try {
@@ -138,9 +114,7 @@ const FarmerDeta = () => {
               {item.price && (
                 <p className="text-green-600 mt-1">Rs. {item.price}</p>
               )}
-              {/* {item.quantity && (
-                <p className="text-gray-600 text-sm mt-1">Available: {item.quantity}</p>
-              )} */}
+          
               {item.model && (
                 <p className="text-gray-600 text-sm">Model: {item.model}</p>
               )}
@@ -168,7 +142,6 @@ const renderApplicationDetailModal = () => {
            <button 
                 onClick={() => {
                   setSelectedApp(null);
-                  setChatModalOpen(false);
                 }}
                 className="text-gray-500 hover:text-gray-700"
               >
@@ -229,6 +202,14 @@ const renderApplicationDetailModal = () => {
                     className="w-40 h-40 object-cover rounded-md mb-3"
                   />
                 )}
+                 {selectedApp.video && (
+                  <video
+                    src={selectedApp.video}
+                    controls
+                    className="w-full h-auto rounded-md mb-3"
+                  
+                  />
+                )}
                 {selectedApp.description && (
                   <p className="text-gray-700">{selectedApp.description}</p>
                 )}
@@ -266,56 +247,6 @@ const renderApplicationDetailModal = () => {
     );
   };
 
-const renderChatModal = () => {
-    if (!chatModalOpen || !selectedApp) return null;
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg max-w-md w-full">
-          <div className="p-6">
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-xl font-bold">
-                Message to {farmer.name}
-              </h3>
-              <button 
-                onClick={() => setChatModalOpen(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-2">Your Message:</label>
-              <textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                className="w-full border rounded-lg p-3"
-                rows="4"
-                placeholder={`Regarding ${selectedApp.animalName || selectedApp.vehicleType} application...`}
-              />
-            </div>
-
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setChatModalOpen(false)}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-              >
-                Cancel
-              </button>
-              <button
-  onClick={() => navigate(`/messages/${farmer.id}`)}
-                disabled={!message || processing}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-blue-300"
-              >
-                {processing ? 'Sending...' : 'Send Message'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
 
   const renderApplications = (applications) => {
@@ -459,7 +390,7 @@ const renderChatModal = () => {
               <span className="bg-green-700 text-white px-3 py-1 rounded-full text-sm">
                 Rating: {farmer.rankPoints || 0}
               </span>
-              {farmer.verified && (
+              {farmer && (
                 <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm">
                   Verified
                 </span>
@@ -532,11 +463,9 @@ const renderChatModal = () => {
           </nav>
         </div>
 
-        {/* Tab Content */}
         {renderTabContent()}
 
 {renderApplicationDetailModal()}
- {renderChatModal()}
         <div className="p-4 bg-gray-50 border-t flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
           <button
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"

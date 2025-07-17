@@ -73,8 +73,11 @@ const FarmerReg = () => {
       .min(1, "At least one image is required"),
     displayImages: Yup.array()
       .min(1, "At least one display image is required"),
-    location: Yup.string().required("Location is required")
-  });
+  location: Yup.object().shape({
+    address: Yup.string().required("Address is required"),
+    latitude: Yup.number().required(),
+    longitude: Yup.number().required()
+  })  });
 
   const handleImageChange = async (e, values, setFieldValue) => {
     const file = e.target.files[0];
@@ -139,9 +142,11 @@ const FarmerReg = () => {
             fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords.lat}&lon=${coords.lng}`)
               .then(res => res.json())
               .then(data => {
-                if (data?.display_name) {
-                  setFieldValue("location", data.display_name);
-                }
+              setFieldValue("location", {
+        latitude: coords.lat,
+        longitude: coords.lng,
+        address: data?.display_name || ""
+      });
               });
           };
 
@@ -327,34 +332,38 @@ const FarmerReg = () => {
                 />
 
                 {/* Location Picker */}
-                <Box sx={{ mt: 2, mb: 2 }}>
-                  <Typography variant="h6" sx={{ mb: 1 }}>Farm Location</Typography>
-                  
-                  <Button 
-                    variant="outlined" 
-                    onClick={() => setMapOpen(true)}
-                    sx={{ mb: 2 }}
-                  >
-                    Pick Location on Map
-                  </Button>
+             <Box sx={{ mt: 2, mb: 2 }}>
+  <Typography variant="h6" sx={{ mb: 1 }}>Farm Location</Typography>
+  
+  <Button 
+    variant="outlined" 
+    onClick={() => setMapOpen(true)}
+    sx={{ mb: 2 }}
+  >
+    Pick Location on Map
+  </Button>
 
-                  {selectedCoords && (
-                    <Typography variant="body2" sx={{ mb: 1 }}>
-                      Selected Coordinates: {selectedCoords.lat.toFixed(5)}, {selectedCoords.lng.toFixed(5)}
-                    </Typography>
-                  )}
+  {values.location.latitude && (
+    <Typography variant="body2" sx={{ mb: 1 }}>
+      Selected Coordinates: {values.location.latitude.toFixed(5)}, {values.location.longitude.toFixed(5)}
+    </Typography>
+  )}
 
-                  <Field
-                    as={TextField}
-                    name="location"
-                    label="Address"
-                    fullWidth
-                    margin="normal"
-                    value={values.location}
-                    error={touched.location && Boolean(errors.location)}
-                    helperText={touched.location && errors.location}
-                  />
-                </Box>
+  <Field
+    as={TextField}
+    name="location.address"
+    label="Address"
+    fullWidth
+    margin="normal"
+    value={values.location.address || ''}
+    error={touched.location?.address && Boolean(errors.location?.address)}
+    helperText={touched.location?.address && errors.location?.address}
+  />
+  
+  {/* Hidden fields for coordinates */}
+  <Field type="hidden" name="location.latitude" />
+  <Field type="hidden" name="location.longitude" />
+</Box>
 
                 {/* Product Types */}
                 <Box sx={{ mt: 3, mb: 2 }}>

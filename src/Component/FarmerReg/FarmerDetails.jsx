@@ -39,6 +39,15 @@ const FarmerDetails = () => {
     contactNum: ''
   });
 
+const productTypeMap = {
+  'Dairy_Product': 'Dairy Products',
+  'Field_Product': 'Field Products',
+  'Animal_waste': 'Animal Waste',
+  'Other_Product': 'Other Products',
+  'Animal_Product': 'Animal Products'
+};
+
+
   // Fetch cart items on component mount
   useEffect(() => {
     const fetchCartItems = async () => {
@@ -371,19 +380,23 @@ const data=   await axios.post(
     <div className="p-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
-          <h2 className="text-3xl font-bold text-green-700">{farmer.displayname}</h2>
+          <div className='flex gap-2 items-center'>
+             <h2 className="text-3xl font-bold text-green-700">{farmer.displayname}</h2>
+          <img src={farmer?.images} alt="" className='w-32 h-32 rounded-full '/>
+          </div>
+         
           <p>
             <strong>Owner:</strong> {farmer.name}
           </p>
           <p>
-            <strong>Distance:</strong> {farmer.distanceKm} km
+            <strong>Address:</strong> {farmer.location?.address} km
           </p>
-          <p>
-            <strong>Product Type:</strong> {farmer.productType}
-          </p>
-        </div>
+  <p className="mt-2 bg-gray-100 rounded text-sm">
+    <strong>Product Available:</strong>
+  {farmer?.productType?.toString()?.replace(/_/g, ' ') || 'No product type specified'}
+</p> </div>
         <img
-          src={farmer.images}
+          src={farmer.displayImages}
           alt="Farmer"
           className="w-full md:w-60 rounded-xl mt-4 md:mt-0"
           loading="lazy"

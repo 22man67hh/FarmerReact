@@ -116,6 +116,25 @@ export const GetAnimalApplication=createAsyncThunk("farmer/animalApplication",as
 
     }
 });
+
+export const GetAdminAnimalApplication=createAsyncThunk("farmer/aadminnimalApplication",async(_,{getState,rejectWithValue})=>{
+    try {
+        const jwt=getState().auth.jwt;
+        if(!jwt){
+            return rejectWithValue("Invalid token,please login again")
+        }
+        const res=await axios.get(`${API_URL}/api/admin/animalApplications`,{
+            headers:{Authorization:`Bearer ${jwt}`},
+        })
+       console.log("Data",res.data);
+        return res.data;
+    } catch (error) {
+        const message=error?.response?.data?.message || "Something went wrong"
+                return rejectWithValue(message);
+
+    }
+});
+
 export const DeleteAnimals=createAsyncThunk("farmer/DeleteAnimals",async(id,{getState,rejectWithValue})=>{
     try {
         const jwt=getState().auth.jwt;
@@ -269,6 +288,20 @@ if(index!==-1){
         state.success="Animal Deleted SuccessFully";
     })
     .addCase(DeleteAnimals.rejected,(state,action)=>{
+        state.isLoading=false;
+        state.error=action.payload;
+    })
+        .addCase(GetAdminAnimalApplication.pending,(state)=>{
+        state.isLoading=true;
+
+    }) 
+    .addCase(GetAdminAnimalApplication.fulfilled,(state,action)=>{
+        state.isLoading=false;
+        state.animals=action.payload.animals;
+        state.farmer=action.payload.farmer;
+        state.success="Application Fetched SuccessFully";
+    })
+    .addCase(GetAdminAnimalApplication.rejected,(state,action)=>{
         state.isLoading=false;
         state.error=action.payload;
     })

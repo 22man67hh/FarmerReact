@@ -44,7 +44,7 @@ function Login() {
           
           switch(retailerStatus) {
             case 'CONFIRMED':
-              navigate('/retailer/dashboard');
+              navigate('/retailer');
               break;
             case 'PENDING':
               navigate('/retailer/application-status');

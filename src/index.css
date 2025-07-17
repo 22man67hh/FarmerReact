@@ -1,5 +1,8 @@
 @import "tailwindcss";
-
+/* input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  background: none;
+  display: none;
+} */
 
 :root {
   --background: oklch(1 0 0);

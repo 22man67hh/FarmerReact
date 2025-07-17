@@ -126,48 +126,7 @@ const FarmerD = () => {
 
 ;
 
-// const renderChatModal = () => {
-//     // if (!chatModalOpen || !selectedApp) return null;
-//     if (!chatModalOpen || !farmer) return null;
 
-//     return (
-//       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-//         <div className="bg-white rounded-lg max-w-md w-full">
-//           <div className="p-6">
-//             <div className="flex justify-between items-start mb-4">
-//               <h3 className="text-xl font-bold">
-//                 Message to {farmer.name}
-//               </h3>
-//               <button 
-//                 onClick={() => setChatModalOpen(false)}
-//                 className="text-gray-500 hover:text-gray-700"
-//               >
-//                 ✕
-//               </button>
-//             </div>
-
-        
-
-//             <div className="flex justify-end space-x-3">
-//               <button
-//                 onClick={() => setChatModalOpen(false)}
-//                 className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-//               >
-//                 Cancel
-//               </button>
-//               <button
-//   onClick={() => navigate(`/messages/${farmer.id}`)}
-//                 disabled={!message || processing}
-//                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-blue-300"
-//               >
-//                 {processing ? 'Sending...' : 'Send Message'}
-//               </button>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//     );
-//   };
 const renderChatModal = () => {
   if (!chatModalOpen || !farmer) return null;
 
@@ -290,7 +249,8 @@ const renderChatModal = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-2xl font-bold">{farmer.name}</h1>
-              <p className="text-green-100">{farmer.displayname}</p>
+              <p className="text-green-100 pb-6">{farmer.displayname}</p>
+              {farmer?.id==currentFarmer?.id ?(<span className='ring ring-gray-600 rounded-md px-3 py-2 mt-8'>Your Profile</span>):(<p></p>)}
             </div>
             <div className="mt-2 md:mt-0 flex space-x-2">
               <span className="bg-green-700 text-white px-3 py-1 rounded-full text-sm">
@@ -369,20 +329,19 @@ const renderChatModal = () => {
           </nav>
         </div>
 
-        {/* Tab Content */}
         {renderTabContent()}
 
  {renderChatModal()}
         <div className="p-4 bg-gray-50 border-t flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
-        { farmer.you ?(
+        { farmer?.id==currentFarmer?.id ?(
           <button
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-            onClick={() => navigate(`/messages/${farmer.id}`)}
+            onClick={() => navigate(`/update/${farmer.id}`)}
           >
-           Send Message
+          Edit profile
           </button>):( <button
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-            onClick={() => navigate(`/update/${farmer.id}`)}
+            onClick={() => navigate(`/messages/${farmer.id}`)}
           >
 Send Message          </button>)}
           {/* <button 

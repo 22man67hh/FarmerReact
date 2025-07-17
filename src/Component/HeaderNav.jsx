@@ -10,6 +10,7 @@ import { fetchFarmers, fetchLoggedInFarmer, resetFarmer } from "./State/Farmer/F
 import useUpdateLocation from "./FarmerReg/useLocationUpdater";
 import { resetWages } from "./State/Wages/Wages";
 import { resetBooking } from "./State/Booking/BookingSlice";
+import { FaShoppingCart } from "react-icons/fa";
 
 const HeaderNav = () => {
 
@@ -100,9 +101,16 @@ setCurrentTime(timeString);
       <div className="flex justify-between items-center px-6 py-3">
  <h1 className="text-xl font-bold">FarmVerse</h1>
       
+   <div className="flex items-center space-x-2 ">
       <button onClick={toggleMenu} className="lg:hidden text-green-800 focus:outline-none">
-{menuOpen ? <X size={28}/>:<Menu size={28}/>}
+                    <button className="flex items-center space-x-1 bg-green-600 hover:bg-green-800 px-3 py-2 rounded-lg transition">
+                      <FaShoppingCart />
+                      <span>Cart</span>
+                    </button>
+
+{menuOpen ?  <X size={28}/>:<Menu size={28}/>}
       </button>
+      </div>
       <ul className="hidden lg:flex  gap-14 list-none mx-8 my-3 px-10">
        {farmer ? (
   <li className="hover:underline shadow-md rounded-md py-2 font-bold ring ring-accent-foreground">
@@ -207,13 +215,22 @@ setCurrentTime(timeString);
         
           
         </li>
+
+         <div className="flex space-x-4">
+                    <button className="flex items-center space-x-1 bg-green-600 hover:bg-green-800 px-3 py-2 rounded-lg transition">
+                      <FaShoppingCart />
+                      <span>Cart</span>
+                    </button>
+                  </div>
       </ul>
       </div>
 
       {/* Mobile menu  */}
       {menuOpen &&(
+        
         <div className="lg:hidden py-4 px-6 space-y-4 animate-slide-down">
 <ul className="flex flex-col gap-4 text-base font-medium">
+  
 <li className="hover:underline font-bold ring">
    <Link to="/account/farmerRegister" onClick={toggleMenu}>Register Farmer</Link>
 </li>

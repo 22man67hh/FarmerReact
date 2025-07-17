@@ -48,6 +48,9 @@ import RetailerLanding from '../Retailer/RetailerDashboard/RetailerLanding'
 import RetailerRegistrationForm from '../Retailer/RetailerDashboard/RetailerRegistrationForm'
 import ApplicationStatus from '../Retailer/RetailerDashboard/ApplicationStatus'
 import AdminApplications from '../Admin/AdminApplication'
+import AnimalMarketplace from '../FarmerReg/AnimalMarketPlace'
+import AdminAnimalApplication from '../Admin/AdminAnimalApplication'
+import FarmerAnimalRequest from '../Admin/FetchFarmer/FarmerAnimalRequest'
 
 function Croute() {
   return (
@@ -68,6 +71,8 @@ function Croute() {
         <Route path="/workerProfile" element={<Layout><WorkerProfile/></Layout>}/>
         <Route path="/dashboard" element={<Dashboard><MainLanding/></Dashboard>}/>
         <Route path="/wages" element={<Layout><Wages/></Layout>}/>
+          <Route path="/animalMarket" element={<Layout><AnimalMarketplace/></Layout>}/>
+
         <Route path="/workerApplication" element={<Layout><WorkerApplications
         /></Layout>}/>
 
@@ -87,6 +92,8 @@ function Croute() {
 
         <Route path="/farmer/vehicleApplication" element={<Dashboard><Application/></Dashboard>}/>
         <Route path="/farmer/animalApplication" element={<Dashboard><AnimalApplication/></Dashboard>}/>
+                <Route path="/farmer/animalRequest" element={<Dashboard><FarmerAnimalRequest/></Dashboard>}/>
+
         <Route path="/farmer/predictCattle" element={<Dashboard><CattleDisease/></Dashboard>}/>
         <Route path="/farmerss/:slug" element={<Dashboard><FarmerD/></Dashboard>}/>
         <Route path="/farmersVehicle" element={<Dashboard><FarmerVehicle/></Dashboard>}/>
@@ -101,6 +108,8 @@ function Croute() {
     <Route path="farmers" element={<FetchFarmers />} />
     <Route path="retailerApplication" element={<AdminApplications />} />
     <Route path="adfarmer/:slug" element={<FarmerDeta />} /> 
+        <Route path="animalApplication" element={<AdminAnimalApplication />} /> 
+
   </Route>
 </Route>
 
@@ -114,7 +123,7 @@ function Croute() {
 <Route element={<RetailerRoute/>}>
 <Route path="/retailer" element={<RetailerDashboard/>}>
 <Route index element={<RetailerLanding/>}/>
-<Route path='dashboard' element={<RetailerDashboard/>} />
+{/* <Route path='dashboard' element={<RetailerDashboard/>} /> */}
 
 </Route>
 </Route>
