@@ -48,7 +48,6 @@ const productTypeMap = {
 };
 
 
-  // Fetch cart items on component mount
   useEffect(() => {
     const fetchCartItems = async () => {
       try {
@@ -94,79 +93,101 @@ const productTypeMap = {
     'Other_products',
   ];
 
-  const updateCartItem = async (productId, newQuantity) => {
-    try {
-const data=   await axios.post(
-    `${API_URL}/api/cart/add`,
-        null,
-        {
-          params: {
-            userId: user?.id,
-            productId: productId,
-            quantity: newQuantity
-          },
-          headers: {
-            'Authorization': `Bearer ${jwt}`
-          }
-        },
-        console.log("ProductId",productId),
-        console.log("Quantity",newQuantity),
-      );
-    } catch (error) {
-      console.error('Error updating cart:', error);
-      toast.error('Failed to update item quantity');
-      throw error; 
-    }
-  };
+const updateCartItem = async (productId, newQuantity) => {
+  console.log("ProductId", productId);
+  console.log("Quantity", newQuantity);
 
-  const handleQuantityChange = async (productId, newQuantity) => {
-    if (newQuantity < 1) return;
-    
-    try {
-      await updateCartItem(productId, newQuantity);
-      
-      setCart(prevCart => {
-        const existingItem = prevCart.find(item => item.product?.id === productId);
-        
-        if (existingItem) {
-          return prevCart.map(item =>
-            item.product?.id === productId 
-              ? { ...item, quantity: newQuantity } 
-              : item
-          );
-        } else {
-          let product;
-          const productTypes = ['animal', 'Dairy_Product', 'field', 'Other_Product'];
-          productTypes.forEach(type => {
-            const products = farmer.sellProducts?.filter(p => p.type === type);
-            const foundProduct = products?.find(p => p.id === productId);
-            if (foundProduct) product = foundProduct;
-          });
-          
-          if (product) {
-            return [...prevCart, { product, quantity: newQuantity }];
-          }
-          return prevCart;
+  try {
+    await axios.post(
+      `${API_URL}/api/cart/add`,
+      null,
+      {
+        params: {
+          userId: user?.id,
+          productId: productId,
+          quantity: newQuantity
+        },
+        headers: {
+          'Authorization': `Bearer ${jwt}`
         }
-      });
-    } catch (error) {
-    }
-  };
+      }
+    );
+  } catch (error) {
+    console.error('Error updating cart:', error);
+    toast.error('Failed to update item quantity');
+    throw error;
+  }
+};
+
+
+const handleQuantityChange = async (productId, newQuantity) => {
+  if (newQuantity < 1) return;
+  
+  try {
+    setCart(prevCart => {
+      const existingItem = prevCart.find(item => item.product?.id === productId);
+      if (existingItem) {
+        return prevCart.map(item =>
+          item.product?.id === productId 
+            ? { ...item, quantity: newQuantity } 
+            : item
+        );
+      } else {
+        // Find the product from farmer's products
+        const product = Object.values(farmer)
+          .flatMap(category => Array.isArray(category) ? category : [])
+          .find(p => p.id === productId);
+        
+        if (product) {
+          return [...prevCart, { product, quantity: newQuantity }];
+        }
+        return prevCart;
+      }
+    });
+
+    // Then make the API call
+    await updateCartItem(productId, newQuantity);
+    
+    // Fetch fresh cart data to ensure sync
+    const response = await axios.get(`${API_URL}/api/cart`, {
+      headers: { Authorization: `Bearer ${jwt}` },
+      params: { userId: user?.id }
+    });
+    setCart(response.data.items || []);
+    
+  } catch (error) {
+    console.error('Error updating cart:', error);
+    toast.error('Failed to update item quantity');
+    setCart(prevCart => {
+      return prevCart.map(item =>
+        item.product?.id === productId 
+          ? { ...item, quantity: cart.find(i => i.product?.id === productId)?.quantity || 0 } 
+          : item
+      );
+    });
+  }
+};
+
+
+
+
+
 
   // Remove item from cart
   const removeFromCart = async (productId) => {
+    console.log("Removing product with ID:", productId);
+
     try {
-      await axios.delete(`${API_URL}/api/cart/remove`, {
+      await axios.delete(`${API_URL}/api/cartItem/remove`, {
         params: {
           userId: user?.id,
-          productId: productId
+          cartItemId: productId
         },
         headers: {
           Authorization: `Bearer ${jwt}`
         }
       });
-      
-      setCart(prevCart => prevCart.filter(item => item.product.id !== productId));
+setCart(prevCart => prevCart.filter(item => item && item.product && item.product.id !== productId));
       toast.success('Item removed from cart');
     } catch (error) {
       console.error('Error removing from cart:', error);
@@ -413,10 +434,10 @@ const data=   await axios.post(
                 <span className="ml-2">Rs. {item.productPrice * item.quantity}</span>
               </div>
               <button 
-                onClick={() => removeFromCart(item.product.id)}
+                onClick={() => removeFromCart(item.id)}
                 className="text-red-500 hover:text-red-700"
               >
-                Remove
+                Remove{item?.product?.id}
               </button>
             </div>
           ))}

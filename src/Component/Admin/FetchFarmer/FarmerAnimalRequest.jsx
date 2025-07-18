@@ -3,6 +3,7 @@ import axios from 'axios';
 import { API_URL } from '../../Config/api';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { toast } from 'react-toastify';
 
 const FarmerAnimalRequest = () => {
     const {farmer}=useSelector((state)=>state.farmer)
@@ -67,7 +68,11 @@ const FarmerAnimalRequest = () => {
   const handleDeactivate = async (workId) => {
     try {
       const token = localStorage.getItem("jwt");
-      await axios.patch(`${API_URL}/api/dailywages/workrequest/${workId}/deactivate`, {}, {
+      await axios.patch(`${API_URL}/deactive/animal`, {}, {
+        params:{
+          sellAnimalId: workId
+
+        },
         headers: { Authorization: `Bearer ${token}` }
       });
       setRequests(requests.map(req => 
@@ -92,24 +97,28 @@ const FarmerAnimalRequest = () => {
     }
   };
 
-const handleApplicationAction = async (applicationId, action) => {
+const handleApplicationAction = async (bookingId, action) => {
   try {
     const jwt = localStorage.getItem("jwt");
-console.log("app Id",applicationId)
-    await axios.put(`${API_URL}/api/dailywages/approveWorkss`, null, {
+    const status = action.toUpperCase(); 
+
+    await axios.put(`${API_URL}/api/animalBookings/approve/sellanimal`, null, {
       params: {
-        workId: applicationId
+        bookingId: bookingId,
+        status: status
       },
       headers: {
         Authorization: `Bearer ${jwt}`
       }
     });
 
-    setApplications(applications.map(app =>
-      app.id === applicationId ? { ...app, status: action.toUpperCase() } : app
+    setBookings(bookings.map(booking => 
+      booking.id === bookingId ? { ...booking, status } : booking
     ));
+    toast.success(`Booking ${action} successfully!`);
+    setSelectedApplication(null);
   } catch (err) {
-    setError(err.response?.data?.message || `Failed to ${action} application`);
+    setError(err.response?.data?.message || `Failed to ${action} booking`);
   }
 };
 
@@ -227,11 +236,19 @@ console.log("app Id",applicationId)
                     <div className="flex justify-between items-start">
                       <div>
                         <h4 className="font-medium">{application?.bookername}</h4>
+               <span className={
+  application?.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+  application?.status === 'ACCEPTED' ? 'bg-green-100 text-green-800' :
+  application?.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+  'bg-gray-100 text-gray-800' 
+}>
+  {application?.status}
+</span>
                         <p className="text-sm text-gray-500">{application?.email}</p>
                         <p className="text-sm mt-1">{application?.priceOffered}</p>
                       </div>
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${application.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                        ${application.status === 'ACCEPTED' ? 'bg-green-100 text-green-800' :
                           application.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
                           'bg-blue-100 text-blue-800'}`}>
                         {application.status}
@@ -242,18 +259,21 @@ console.log("app Id",applicationId)
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleApplicationAction(application.id, 'approve');
+                            handleApplicationAction(application.bookingId, 'accepted');
+                            // console.log(application.bookingId)
                           }}
                           className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                          disabled={application.status !== 'PENDING'}
                         >
                           Approve
                         </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleApplicationAction(application.id, 'reject');
+                            handleApplicationAction(application.bookingId, 'rejected');
                           }}
                           className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+                          disabled={application.status !== 'PENDING'}
                         >
                           Reject
                         </button>
