@@ -107,41 +107,35 @@ const handleKhaltiPayment = async () => {
       status: 'PENDING' 
     };
 
-    
-    const orderResponse = await axios.post(`${API_URL}/api/order/place`, orderData,{
-      params:{
-        userId:user?.id
-      }
-    }, {
-      headers: {
-        'Authorization': `Bearer ${jwt}`,
-      }
+    await axios.post(`${API_URL}/api/order/place`, orderData, {
+      params: { userId: user?.id },
+      headers: { 'Authorization': `Bearer ${jwt}` }
     });
 
-
-      const khaltiResponse = await axios.post(
-      `${API_URL}/api/user/payment/khalti`,
-      null,
-      {
-        params: {
-          user_id: user.id,
-          total: 150
-        },
-        headers: {
-          'Authorization': `Bearer ${jwt}`
-        }
-      }
-    );
-
-    window.location.href = khaltiResponse.data.payment_url;
-
-  
+    await initiateKhaltiPayment();
 
   } catch (error) {
     console.error('Payment initiation failed:', error);
     toast.error('Failed to initiate payment. Please try again.');
   }
 };
+const initiateKhaltiPayment = async () => {
+  try {
+    const response = await axios.get(
+      `http://localhost:8080/user/payment/khalti?user_id=${user.id}&total=${cart.total}`,
+      {
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+      }
+    );
+
+    window.location.href = response.data.payment_url;
+  } catch (error) {
+    console.error("Khalti payment initiation failed", error);
+  }
+};
+
 
   const validateForm = () => {
     const newErrors = {};

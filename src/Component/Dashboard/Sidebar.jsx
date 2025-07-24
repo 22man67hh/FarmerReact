@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import {
   Home, Car, Users, Leaf, List, Upload, Megaphone, Menu, X,
   FileUser,
-  NotebookPen
+  NotebookPen,
+  ShoppingBag
 } from 'lucide-react';
 import { GiBuffaloHead } from "react-icons/gi";
 const Sidebar = () => {
@@ -19,6 +20,8 @@ const Sidebar = () => {
     { to: '/farmer/farmerBookings', label: 'Booking Application', icon: <List size={20} /> },
     { to: '/farmer/workRequest', label: 'Work Request', icon: <FileUser size={20} /> },
     { to: '/farmer/registerWages', label: 'Register Work', icon: <NotebookPen size={20} /> },
+     { to: '/farmer/Orders', label: 'Order Request', icon: <ShoppingBag size={20} /> },
+
     { to: '/admin/update-model', label: 'Update ML Model', icon: <Upload size={20} /> },
     { to: '/admin/post-update', label: 'Post Update', icon: <Megaphone size={20} /> },
   ];

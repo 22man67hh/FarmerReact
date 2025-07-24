@@ -125,7 +125,7 @@ setCurrentTime(timeString);
           <Link to="/">HOME</Link>{" "}
         </li>
         <li className="hover:underline">
-          <Link to="/about">About Us</Link>{" "}
+          <Link to="/orders">Orders</Link>{" "}
         </li>
         <li className="relative inline-flex " onMouseLeave={closeService}>
           <div
