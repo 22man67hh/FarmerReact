@@ -16,7 +16,10 @@ const RecentChatsList = () => {
   const navigate = useNavigate();
   const { partnerId } = useParams();
   const { farmer } = useSelector((state) => state.farmer);
-  const farmerId = farmer?.id;
+  const{user}=useSelector((state)=>state.auth)
+  // const farmerId = farmer?.id;
+    const farmerId = user?.id;
+
 
   // Fetch chats and auto-select if URL has partnerId
   const fetchRecentChats = useCallback(async () => {

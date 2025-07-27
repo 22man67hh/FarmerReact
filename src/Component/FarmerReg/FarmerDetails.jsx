@@ -32,6 +32,7 @@ const FarmerDetails = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const itemsPerPage = 3;
+  const farmerId=user?.id;
   const [bookingForm, setBookingForm] = useState({
     startDateTime: '',
     endDateTime: '',
@@ -258,6 +259,7 @@ setCart(prevCart => prevCart.filter(item => item && item.product && item.product
           },
         });
         setFarmer(res.data);
+        console.log(res.data)
       } catch (error) {
         setError(error);
         console.error(error);
@@ -405,7 +407,18 @@ setCart(prevCart => prevCart.filter(item => item && item.product && item.product
              <h2 className="text-3xl font-bold text-green-700">{farmer.displayname}</h2>
           <img src={farmer?.images} alt="" className='w-32 h-32 rounded-full '/>
           </div>
-         
+
+         <div className="fixed bottom-4 left-4 z-50">
+            <button
+              className="bg-blue-600 text-white px-4 py-3 rounded-full shadow-lg hover:bg-blue-700 transition flex items-center gap-2"
+              onClick={() => 
+              navigate(`/messages/${farmer?.userId}`)
+              }
+              title={`Chat with ${farmer?.displayname || 'user'}`}
+            >
+              👥 <span className="hidden sm:inline">Chat with {farmer?.displayname}</span>
+            </button>
+          </div>
           <p>
             <strong>Owner:</strong> {farmer.name}
           </p>

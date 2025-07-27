@@ -28,6 +28,7 @@ const RegisterForm = () => {
   ),
     cpassword:Yup.string().oneOf([Yup.ref("password"),null],"password must match").required('Confrim Password is required'),
     role:Yup.string().required('Role is required'),
+    phone:Yup.string().required('Phone number is required').max(10).min(10)
   })
 
   const initialValues = {
@@ -35,6 +36,7 @@ const RegisterForm = () => {
   email: '',
   password: '',
   cpassword: '',
+  phone:'',
   role: ''
 };
   return (
@@ -105,6 +107,18 @@ const RegisterForm = () => {
               margin="normal"
               error={touched.cpassword && !!errors.cpassword}
               helperText={touched.cpassword && errors.cpassword}
+            />
+
+             <Field
+              as={TextField}
+              name="phone"
+              label="Phone Number"
+              type="text"
+              fullWidth
+              variant="outlined"
+              margin="normal"
+              error={touched.phone && !!errors.phone}
+              helperText={touched.phone && errors.phone}
             />
 
             <FormControl fullWidth margin="normal">

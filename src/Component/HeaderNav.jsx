@@ -112,6 +112,8 @@ setCurrentTime(timeString);
       </button>
       </div>
       <ul className="hidden lg:flex  gap-14 list-none mx-8 my-3 px-10">
+
+
        {farmer ? (
   <li className="hover:underline shadow-md rounded-md py-2 font-bold ring ring-accent-foreground">
     <Link to="/dashboard">{farmer?.name} (Farmer)</Link>
@@ -121,6 +123,9 @@ setCurrentTime(timeString);
     <Link to="/account/farmerRegister">Register as Farmer</Link>
   </li>
 )}
+<li>
+  <Link to="/ourfarms" className="hover:underline accent-primary-foreground">Our Farms</Link>
+</li>
         <li className="hover:underline ">
           <Link to="/">HOME</Link>{" "}
         </li>

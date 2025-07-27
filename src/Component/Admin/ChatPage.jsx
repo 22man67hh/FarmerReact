@@ -23,7 +23,8 @@ const ChatPage = () => {
   const fileInputRef = useRef(null);
   const stompClientRef = useRef(null);
 
-  const { farmer: currentUser } = useSelector((state) => state.farmer);
+  // const { farmer: currentUser } = useSelector((state) => state.farmer);
+const {user:currentUser}=useSelector((state)=>state.auth);
 
   useEffect(() => {
     if (!currentUser?.id || !farmerId) return;
@@ -87,7 +88,7 @@ const ChatPage = () => {
         setLoading(true);
         
         const [farmerResponse, chatResponse] = await Promise.all([
-          axios.get(`${API_URL}/api/Farmers/${farmerId}`, {
+          axios.get(`${API_URL}/api/Users/${farmerId}`, {
             headers: { Authorization: `Bearer ${localStorage.getItem('jwt')}` }
           }),
           axios.get(`${API_URL}/api/message/${currentUser.id}`, {
@@ -265,7 +266,7 @@ const ChatPage = () => {
             </svg>
             Back
           </button>
-          <h1 className="text-xl font-bold">Chat with {farmer?.name}</h1>
+          <h1 className="text-xl font-bold">Chat with {farmer?.fullName}</h1>
           <div className="w-32 h-32 rounded-full shadow-2xl overflow-hidden">
             <img 
               src={farmer?.images || '/default-avatar.png'} 

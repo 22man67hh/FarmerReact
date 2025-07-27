@@ -42,7 +42,7 @@ const FarmerReg = () => {
     displayname: "",
     citizenno: "",
     houseno: "",
-    phone: "",
+    phone:farmer?.phone|| "",
     facebook: "",
     email: email || "",
     productType: [],

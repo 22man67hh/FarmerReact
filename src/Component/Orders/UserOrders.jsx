@@ -61,7 +61,7 @@ const initiateKhaltiPayment = async (order) => {
   try {
     const response = await axios.get(`${API_URL}/user/payment/khalti`, {
       params: {
-        user_id: order.user.id,
+        order_id: order.id,
         total: order.total
       },
       headers: { Authorization: `Bearer ${jwt}` }
@@ -81,8 +81,9 @@ const startPaymentStatusPolling = (orderId) => {
       const response = await axios.get(`${API_URL}/orders/${orderId}`);
       if (response.data.status !== 'CONFIRMED') {
         clearInterval(interval);
-        fetchOrders();
         toast.success('Payment completed successfully!');
+                fetchOrders();
+
       }
     } catch (error) {
       clearInterval(interval);
@@ -91,9 +92,10 @@ const startPaymentStatusPolling = (orderId) => {
 };
   const handleCancelOrder = async () => {
     try {
-      await axios.put(
-        `${API_URL}/api/orders/${selectedOrder.id}/cancel`,
-        {},
+      const orderId=selectedOrder?.id
+      await axios.delete(
+        `${API_URL}/api/orders/${orderId}/cancel`,
+        
         { headers: { Authorization: `Bearer ${jwt}` } }
       );
       setData(prev => ({
@@ -104,6 +106,8 @@ const startPaymentStatusPolling = (orderId) => {
       }));
       toast.success('Order cancelled successfully');
       setCancelModalOpen(false);
+      setSelectedOrder(false);
+      fetchOrders()
     } catch (error) {
       toast.error('Failed to cancel order');
     }
@@ -386,6 +390,9 @@ const startPaymentStatusPolling = (orderId) => {
                     </p>
                     <p className="text-sm mt-1"><span className="font-medium">Payment:</span> {selectedOrder.method || 'N/A'}</p>
                     <p className="text-sm mt-1"><span className="font-medium">Date:</span> {new Date(selectedOrder.orderedAt).toLocaleString()}</p>
+                     <p className="text-sm mt-1"><span className="font-medium">Delivery Charge:</span> Rs. {selectedOrder.deliveryCharge}</p>
+                    <p className="text-sm mt-1"><span className="font-medium">Distance:</span> Km. {Number(selectedOrder?.distanceKm).toFixed(2)}</p>
+
                     <p className="text-sm mt-1"><span className="font-medium">Total:</span> Rs. {selectedOrder.total?.toFixed(2)}</p>
                   </div>
                 </div>
@@ -400,7 +407,12 @@ const startPaymentStatusPolling = (orderId) => {
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                        
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sub total</th>
+                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Charge</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+
+
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -433,6 +445,12 @@ const startPaymentStatusPolling = (orderId) => {
                           </td>
                           <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
                             Rs. {(item.price * item.quantity).toFixed(2)}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                           Rs. {selectedOrder.deliveryCharge}
+                          </td>
+                           <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                           Rs. {selectedOrder.total}
                           </td>
                         </tr>
                       ))}

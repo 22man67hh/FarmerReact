@@ -53,6 +53,8 @@ import AdminAnimalApplication from '../Admin/AdminAnimalApplication'
 import FarmerAnimalRequest from '../Admin/FetchFarmer/FarmerAnimalRequest'
 import FarmerOrders from '../FarmerReg/FarmerOrders'
 import UserOrders from '../Orders/UserOrders'
+import { PaymentStatusPage } from '../Services/PaymentStatusPage'
+import OurFarm from '../FarmerReg/OurFarm'
 
 function Croute() {
   return (
@@ -74,6 +76,9 @@ function Croute() {
         <Route path="/dashboard" element={<Dashboard><MainLanding/></Dashboard>}/>
         <Route path="/wages" element={<Layout><Wages/></Layout>}/>
          <Route path="/orders" element={<Layout><UserOrders/></Layout>}/>
+         <Route path="/ourfarms" element={<Layout><OurFarm/></Layout>}/>
+
+         <Route path="payment-status" element={<Layout><PaymentStatusPage/></Layout>}></Route>
 
           <Route path="/animalMarket" element={<Layout><AnimalMarketplace/></Layout>}/>
 
@@ -105,7 +110,9 @@ function Croute() {
 
 
         <Route path="/weather" element={<Layout><WeatherFore/></Layout>}/>
-<Route path='/messages/:farmerId' element={<ChatPage/>} />
+<Route path="/messages/:farmerId" element={<ChatPage />} />
+<Route path='/messages' element={<ChatPage/>} />
+
 <Route path='/chatbox/:farmerId' element={<RecentChatsList/>} />
 <Route element={<AdminRoute />}>
   <Route path="/admin" element={<AdDashboard />}>

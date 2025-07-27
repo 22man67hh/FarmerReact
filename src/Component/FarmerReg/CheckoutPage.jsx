@@ -14,33 +14,36 @@ import {
   Divider,
   List,
   ListItem,
-  ListItemText,
-  FormControlLabel,
-  Checkbox
+  ListItemText
 } from '@mui/material';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import RoomIcon from '@mui/icons-material/Room';
+import LeafletMap from './LeafletMap';
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const jwt = localStorage.getItem('jwt');
+
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [paymentMethod, setPaymentMethod] = useState('cash');
-  
+  const [isMapOpen, setIsMapOpen] = useState(false);
+  const [selectedPosition, setSelectedPosition] = useState(null);
+const [deliveryCharge, setDeliveryCharge] = useState(0);
+const [distanceKm, setDistanceKm] = useState(0);
+const selectedFarmerId = cart?.farmId
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+
     address: '',
-    city: '',
-    state: '',
-    zipCode: '',
-    phone: '',
-    email: '',
+
     deliveryInstructions: ''
   });
 
   const [errors, setErrors] = useState({});
 
+  // Fetch cart
   useEffect(() => {
     const fetchCart = async () => {
       try {
@@ -52,8 +55,8 @@ const CheckoutPage = () => {
             userId: user?.id
           }
         });
-        console.log(response.data)
         setCart(response.data);
+        console.log(response.data);
       } catch (error) {
         console.error('Error fetching cart:', error);
         toast.error('Failed to load your cart');
@@ -67,6 +70,52 @@ const CheckoutPage = () => {
     }
   }, [user?.id, jwt]);
 
+
+  const handlePositionSelected = async (position) => {
+  setSelectedPosition(position); 
+
+  try {
+    const response = await axios.get(`${API_URL}/api/delivery-charge`, {
+      params: {
+        lat: position.lat,
+        lng: position.lng,
+        farmerId: selectedFarmerId, 
+      },
+          headers:{
+        Authorization: `Bearer ${localStorage.getItem('jwt')}`,
+          }
+        
+      
+    });
+
+    const { distance, charge } = response.data;
+    console.log(response.data);
+    setDeliveryCharge(charge);
+    setDistanceKm(distance);
+  } catch (error) {
+    console.error("Failed to fetch delivery charge", error);
+  }
+};
+
+
+  useEffect(() => {
+    const reverseGeocode = async () => {
+      if (!selectedPosition) return;
+      try {
+        const { lat, lng } = selectedPosition;
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+        const data = await response.json();
+        if (data?.display_name) {
+          setFormData(prev => ({ ...prev, address: data.display_name }));
+        }
+      } catch (error) {
+        console.error('Reverse geocoding failed:', error);
+      }
+    };
+
+    reverseGeocode();
+  }, [selectedPosition]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -75,131 +124,61 @@ const CheckoutPage = () => {
     }
   };
 
-
-const handleKhaltiPayment = async () => {
-  if (!validateForm()) {
-    return;
-  }
-
-  try {
-    const orderData = {
-      userId: user.id,
-      shippingAddress: {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        address: formData.address,
-        city: formData.city,
-        state: formData.state,
-        zipCode: formData.zipCode
-      },
-      contactInfo: {
-        phone: formData.phone,
-        email: formData.email
-      },
-      deliveryInstructions: formData.deliveryInstructions,
-      paymentMethod: 'khalti',
-      items: cart.items.map(item => ({
-        productId: item.productId,
-        quantity: item.quantity,
-        price: item.productPrice
-      })),
-      totalAmount: cart.total,
-      status: 'PENDING' 
-    };
-
-    await axios.post(`${API_URL}/api/order/place`, orderData, {
-      params: { userId: user?.id },
-      headers: { 'Authorization': `Bearer ${jwt}` }
-    });
-
-    await initiateKhaltiPayment();
-
-  } catch (error) {
-    console.error('Payment initiation failed:', error);
-    toast.error('Failed to initiate payment. Please try again.');
-  }
-};
-const initiateKhaltiPayment = async () => {
-  try {
-    const response = await axios.get(
-      `http://localhost:8080/user/payment/khalti?user_id=${user.id}&total=${cart.total}`,
-      {
-        headers: {
-          Authorization: `Bearer ${jwt}`,
-        },
-      }
-    );
-
-    window.location.href = response.data.payment_url;
-  } catch (error) {
-    console.error("Khalti payment initiation failed", error);
-  }
-};
-
-
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.firstName) newErrors.firstName = 'First name is required';
-    if (!formData.lastName) newErrors.lastName = 'Last name is required';
+  
     if (!formData.address) newErrors.address = 'Address is required';
-    if (!formData.city) newErrors.city = 'City is required';
-    if (!formData.state) newErrors.state = 'State is required';
-    if (!formData.zipCode) newErrors.zipCode = 'Zip code is required';
-    if (!formData.phone) newErrors.phone = 'Phone number is required';
-    if (!formData.email) {
-      newErrors.email = 'Email is required';
-    } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
-    }
+ 
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
+  const handleOpenMap = () => setIsMapOpen(true);
+  const handleCloseMap = () => setIsMapOpen(false);
+  
+
+  const handleRequestOrder = async () => {
+    if (!validateForm()) return;
 
     try {
       const orderData = {
         userId: user.id,
-        shippingAddress: {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
+        location: {
+         
           address: formData.address,
-          city: formData.city,
-          state: formData.state,
-          zipCode: formData.zipCode
+          latitude: selectedPosition?.lat,
+          longitude: selectedPosition?.lng
         },
-        contactInfo: {
-          phone: formData.phone,
-          email: formData.email
-        },
-        deliveryInstructions: formData.deliveryInstructions,
-        paymentMethod,
+        
+        
+      deliveryInstructions: formData.deliveryInstructions,
         items: cart.items.map(item => ({
-          productId: item.product.id,
+          productId: item.productId,
           quantity: item.quantity,
-          price: item.product.price
+          price: item.productPrice
         })),
-        totalAmount: cart.total
+        total: cart.total,
+        deliveryCharge,
+        distanceKm
       };
 
-      const response = await axios.post(`${API_URL}/api/orders`, orderData, {
-        headers: {
-          'Authorization': `Bearer ${jwt}`,
-          'Content-Type': 'application/json'
-        }
+      await axios.post(`${API_URL}/api/order/place`, orderData, {
+        params: { 
+
+          userId: user?.id },
+        headers: { 
+          
+                        'Content-Type': 'application/json',
+
+          'Authorization': `Bearer ${jwt}` }
       });
 
-      toast.success('Order placed successfully!');
-      navigate('/order-confirmation', { state: { orderId: response.data.id } });
+      toast.success("Order requested successfully!");
+      navigate('/orders');
     } catch (error) {
-      console.error('Checkout error:', error);
-      toast.error('Failed to place order. Please try again.');
+      console.error('Order request failed:', error);
+      toast.error('Failed to request order. Please try again.');
     }
   };
 
@@ -215,12 +194,7 @@ const initiateKhaltiPayment = async () => {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Typography variant="h5">Your cart is empty</Typography>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          onClick={() => navigate('/')}
-          sx={{ mt: 2 }}
-        >
+        <Button variant="contained" color="primary" onClick={() => navigate('/')} sx={{ mt: 2 }}>
           Continue Shopping
         </Button>
       </Container>
@@ -230,150 +204,55 @@ const initiateKhaltiPayment = async () => {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Typography variant="h4" gutterBottom>Checkout</Typography>
-      
+
       <Grid container spacing={4}>
-        {/* Shipping Information */}
+        {/* Shipping Form */}
         <Grid item xs={12} md={7}>
           <Paper elevation={3} sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>Shipping Information</Typography>
-            <form onSubmit={handleSubmit}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="First Name"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleInputChange}
-                    error={!!errors.firstName}
-                    helperText={errors.firstName}
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Last Name"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleInputChange}
-                    error={!!errors.lastName}
-                    helperText={errors.lastName}
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Address"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    error={!!errors.address}
-                    helperText={errors.address}
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="City"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    error={!!errors.city}
-                    helperText={errors.city}
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                  <TextField
-                    fullWidth
-                    label="State"
-                    name="state"
-                    value={formData.state}
-                    onChange={handleInputChange}
-                    error={!!errors.state}
-                    helperText={errors.state}
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                  <TextField
-                    fullWidth
-                    label="Zip Code"
-                    name="zipCode"
-                    value={formData.zipCode}
-                    onChange={handleInputChange}
-                    error={!!errors.zipCode}
-                    helperText={errors.zipCode}
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Phone Number"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    error={!!errors.phone}
-                    helperText={errors.phone}
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Email"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    error={!!errors.email}
-                    helperText={errors.email}
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Delivery Instructions (Optional)"
-                    name="deliveryInstructions"
-                    value={formData.deliveryInstructions}
-                    onChange={handleInputChange}
-                    multiline
-                    rows={3}
-                  />
-                </Grid>
+            <Grid container spacing={2}>
+             
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Address"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  error={!!errors.address}
+                  helperText={errors.address}
+                  required
+                />
               </Grid>
 
-              <Typography variant="h6" sx={{ mt: 3, mb: 2 }}>Payment Method</Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox 
-                        checked={paymentMethod === 'cash'}
-                        onChange={() => setPaymentMethod('cash')}
-                      />
-                    }
-                    label="Cash on Delivery"
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox 
-                        checked={paymentMethod === 'khalti'}
-                        onChange={() => setPaymentMethod('khalti')}
-                      />
-                    }
-                    label="Khalti"
-                  />
-                </Grid>
+              <Grid item xs={12}>
+                <Button
+                  variant="outlined"
+                  startIcon={<RoomIcon />}
+                  onClick={handleOpenMap}
+                  sx={{ mb: 1 }}
+                >
+                  {selectedPosition ? 'Update Location' : 'Pick Location from Map'}
+                </Button>
+                {selectedPosition && (
+                  <Typography variant="body2" color="textSecondary">
+                    Selected: Latitude: {selectedPosition.lat.toFixed(5)}, Longitude: {selectedPosition.lng.toFixed(5)}
+                  </Typography>
+                )}
               </Grid>
-            </form>
+
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Delivery Instructions (Optional)"
+                  name="deliveryInstructions"
+                  value={formData.deliveryInstructions}
+                  onChange={handleInputChange}
+                  multiline
+                  rows={3}
+                />
+              </Grid>
+            </Grid>
           </Paper>
         </Grid>
 
@@ -384,9 +263,9 @@ const initiateKhaltiPayment = async () => {
             <List>
               {cart.items.map((item) => (
                 <ListItem key={item.id} sx={{ py: 1, px: 0 }}>
-                  <ListItemText 
-                    primary={`${item?.productName} (x${item.quantity})`}
-                    secondary={`Rs. ${item?.productPrice.toFixed(2)} each`}
+                  <ListItemText
+                    primary={`${item.productName} (x${item.quantity})`}
+                    secondary={`Rs. ${item.productPrice.toFixed(2)} each`}
                   />
                   <Typography variant="body1">
                     Rs. {(item.productPrice * item.quantity).toFixed(2)}
@@ -395,42 +274,62 @@ const initiateKhaltiPayment = async () => {
               ))}
             </List>
             <Divider sx={{ my: 2 }} />
-            <Grid container sx={{ mb: 2 }}>
-              <Grid item xs={6}>
-                <Typography variant="body1">Subtotal:</Typography>
-              </Grid>
-              <Grid item xs={6} textAlign="right">
-                <Typography variant="body1">Rs. {cart.items?.cost?.toFixed(2)}</Typography>
-              </Grid>
-              <Grid item xs={6}>
-                <Typography variant="body1">Shipping:</Typography>
-              </Grid>
-              <Grid item xs={6} textAlign="right">
-                <Typography variant="body1">Free</Typography>
-              </Grid>
-            </Grid>
-            <Divider sx={{ my: 2 }} />
-            <Grid container>
-              <Grid item xs={6}>
-                <Typography variant="h6">Total:</Typography>
-              </Grid>
-              <Grid item xs={6} textAlign="right">
-                <Typography variant="h6">Rs. {cart.total.toFixed(2)}</Typography>
-              </Grid>
-            </Grid>
-           <Button
-  fullWidth
-  variant="contained"
-  color="primary"
-  size="large"
-  sx={{ mt: 3 }}
-  onClick={paymentMethod === 'khalti' ? handleKhaltiPayment : handleSubmit}
->
-  {paymentMethod === 'khalti' ? 'Pay with Khalti' : 'Place Order'}
-</Button>
+          <Grid container sx={{gap:2}}>
+  <Grid item xs={6}>
+    <Typography variant="body2">Subtotal:</Typography>
+  </Grid>
+  <Grid item xs={6} textAlign="right">
+    <Typography variant="body2">Rs. {cart.total.toFixed(2)}</Typography>
+  </Grid>
+
+  <Grid item xs={6}>
+    <Typography variant="body2">Delivery Charge:</Typography>
+  </Grid>
+  <Grid item xs={6} textAlign="right">
+    <Typography variant="body2">Rs. {deliveryCharge.toFixed(2)}</Typography>
+  </Grid>
+
+  <Grid item xs={12}>
+    <Divider sx={{ my: 1 }} />
+  </Grid>
+
+  <Grid item xs={6}>
+    <Typography variant="h6">Total:</Typography>
+  </Grid>
+  <Grid item xs={6} textAlign="right">
+    <Typography variant="h6">
+      Rs. {(cart.total + deliveryCharge).toFixed(2)}
+    </Typography>
+  </Grid>
+</Grid>
+
+            <Button
+              fullWidth
+              variant="contained"
+              color="primary"
+              size="large"
+              sx={{ mt: 3 }}
+              onClick={handleRequestOrder}
+            >
+              Request Order
+            </Button>
           </Paper>
         </Grid>
       </Grid>
+
+      {/* Map Modal */}
+      <Dialog open={isMapOpen} onClose={handleCloseMap} maxWidth="md" fullWidth>
+        <DialogTitle>Select Location</DialogTitle>
+        <DialogContent>
+          <LeafletMap
+            selectedPosition={selectedPosition}
+            onPositionSelected={(pos) => {
+handlePositionSelected(pos);
+              handleCloseMap();
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </Container>
   );
 };
