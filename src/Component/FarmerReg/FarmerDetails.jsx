@@ -373,28 +373,37 @@ setCart(prevCart => prevCart.filter(item => item && item.product && item.product
         <p>Description: {product.description}</p>
         
         <div className="flex items-center mt-2">
-          <button 
-            onClick={() => handleQuantityChange(product.id, quantity - 1)}
-            className="px-3 py-1 bg-gray-200 rounded-l"
-            disabled={quantity <= 1}
-          >
-            -
-          </button>
-          <span className="px-4 py-1 bg-gray-100">{quantity}</span>
-          <button 
-            onClick={() => handleQuantityChange(product.id, quantity + 1)}
-            className="px-3 py-1 bg-gray-200 rounded-r"
-          >
-            +
-          </button>
+         <div className="flex items-center mt-2">
+  {!farmer?.you && (
+    <button 
+      onClick={() => handleQuantityChange(product.id, quantity - 1)}
+      className="px-3 py-1 bg-gray-200 rounded-l"
+      disabled={quantity <= 1}
+    >
+      -
+    </button>
+  )}
+
+  <span className="px-4 py-1 bg-gray-100">{quantity}</span>
+
+  {!farmer?.you && (
+    <button 
+      onClick={() => handleQuantityChange(product.id, quantity + 1)}
+      className="px-3 py-1 bg-gray-200 rounded-r"
+    >
+      +
+    </button>
+  )}
+</div>
+
         </div>
         
-        <button
+        {/* <button
           onClick={() => handleAddToCart(product)}
           className="mt-2 px-4 py-1 bg-blue-600 text-white rounded"
         >
           {quantity > 0 ? 'Update Cart' : 'Add to Cart'}
-        </button>
+        </button> */}
       </div>
     );
   };
@@ -510,12 +519,21 @@ setCart(prevCart => prevCart.filter(item => item && item.product && item.product
               <p>Price: Rs. {animal.price}</p>
               <p>Description: {animal.description}</p>
               <p>Location: {animal.location?.address}</p>
-              <button
-                onClick={() => handleAddToCart(animal)}
-                className="mt-2 px-4 py-1 bg-blue-600 text-white rounded"
-              >
-                Add to Cart
-              </button>
+            {!farmer?.you ? (
+  <button
+    onClick={() => navigate('/animalMarket')}
+    className="mt-2 px-4 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+  >
+    Request Animal
+  </button>
+) : (
+  <button
+    onClick={() => navigate(`/applications/animal/${animal.id}`)} // Example navigation
+    className="mt-2 px-4 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+  >
+    View Animal Applications
+  </button>
+)}
             </div>
           ))}
 

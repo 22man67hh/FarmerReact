@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   TextField,
   Button,
@@ -11,6 +11,9 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { API_URL } from '../Config/api';
+import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 const initialValues = {
   N: '',
@@ -33,24 +36,36 @@ const validationSchema = Yup.object({
 });
 
 const CropPredictorForm = () => {
- const handleSubmit = async (values, { setSubmitting, resetForm }) => {
-  try {
-    const jwt = localStorage.getItem('jwt');
-    const response = await axios.post('/api/predict', values, {
-      headers: {
-        Authorization: `Bearer ${jwt}`
-      }
-    });
+  const { farmer } = useSelector((state) => state.farmer);
+  const navigate = useNavigate();
 
-    toast.success(`Suggested crop: ${response.data.crop}`);
-  } catch (error) {
-    toast.error('Prediction failed');
-  } finally {
-    setSubmitting(false);
-    resetForm();
-  }
-};
+  useEffect(() => {
+    if (!farmer) {
+      navigate("/", { 
+        state: { 
+          message: "You need to be a farmer to access this feature" 
+        } 
+      });
+    }
+  }, [farmer, navigate]);
 
+  const handleSubmit = async (values, { setSubmitting, resetForm }) => {
+    try {
+      const jwt = localStorage.getItem('jwt');
+      const response = await axios.post(`${API_URL}/api/predict`, values, {
+        headers: {
+          Authorization: `Bearer ${jwt}`
+        }
+      });
+
+      toast.success(`Suggested crop: ${response.data.predictedCrop}`);
+    } catch (error) {
+      toast.error('Prediction failed');
+    } finally {
+      setSubmitting(false);
+      resetForm();
+    }
+  };
 
   return (
     <Box className='max-w-md mx-auto mt-8 p-4'>
@@ -75,6 +90,10 @@ const CropPredictorForm = () => {
                       label={field.charAt(0).toUpperCase() + field.slice(1)}
                       fullWidth
                       margin='normal'
+                      validate={(value) => {
+                        if (value < 0) return "Value must be positive";
+                      }}
+                      inputProps={{ min: 0 }}
                     />
                     <ErrorMessage
                       name={field}

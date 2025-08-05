@@ -17,11 +17,9 @@ const RecentChatsList = () => {
   const { partnerId } = useParams();
   const { farmer } = useSelector((state) => state.farmer);
   const{user}=useSelector((state)=>state.auth)
-  // const farmerId = farmer?.id;
     const farmerId = user?.id;
 
 
-  // Fetch chats and auto-select if URL has partnerId
   const fetchRecentChats = useCallback(async () => {
     try {
       setLoading(true);
@@ -47,8 +45,8 @@ const RecentChatsList = () => {
       }));
 
       setChats(formattedChats);
+      console.log(formattedChats);
 
-      // Auto-select chat if URL contains partnerId
       if (partnerId) {
         const chat = formattedChats.find(c => c.partner.id === partnerId);
         if (chat) setSelectedChat(chat);
@@ -66,13 +64,11 @@ const RecentChatsList = () => {
     return () => clearInterval(interval);
   }, [fetchRecentChats]);
 
-  // Handle chat selection - updates right panel and URL
   const handleSelectChat = (chat) => {
     setSelectedChat(chat);
     navigate(`/messages/${chat.partner.id}`, { replace: true });
   };
 
-  // Handle back button on mobile
   const handleBack = () => {
     setSelectedChat(null);
     navigate('/messages');
@@ -85,7 +81,6 @@ const RecentChatsList = () => {
     </div>;
   }
 
-  // Error state
   if (error) {
     return <div className="flex justify-center items-center h-screen">
       <div className="text-center p-4">
@@ -130,11 +125,9 @@ const RecentChatsList = () => {
         </div>
       </div>
 
-      {/* Right panel - Chat messages */}
       <div className={`${selectedChat ? 'block' : 'hidden md:flex'} flex-1 flex-col`}>
         {selectedChat ? (
           <>
-            {/* Mobile header with back button */}
             <div className="md:hidden p-3 border-b flex items-center">
               <button onClick={handleBack} className="mr-2">
                 <ArrowBackIcon />

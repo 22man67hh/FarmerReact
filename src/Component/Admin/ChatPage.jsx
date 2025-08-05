@@ -23,7 +23,6 @@ const ChatPage = () => {
   const fileInputRef = useRef(null);
   const stompClientRef = useRef(null);
 
-  // const { farmer: currentUser } = useSelector((state) => state.farmer);
 const {user:currentUser}=useSelector((state)=>state.auth);
 
   useEffect(() => {
@@ -191,7 +190,6 @@ const {user:currentUser}=useSelector((state)=>state.auth);
       // Replace with server response
       setMessages(prev => prev.map(msg => msg.id === tempMessage.id ? response.data : msg));
 
-      // Send via WebSocket
       if (stompClientRef.current?.connected) {
         stompClientRef.current.publish({
           destination: '/app/chat.send',
@@ -269,7 +267,7 @@ const {user:currentUser}=useSelector((state)=>state.auth);
           <h1 className="text-xl font-bold">Chat with {farmer?.fullName}</h1>
           <div className="w-32 h-32 rounded-full shadow-2xl overflow-hidden">
             <img 
-              src={farmer?.images || '/default-avatar.png'} 
+              src={farmer?.image || '/default-avatar.png'} 
               alt={farmer?.name} 
               className="w-full h-full object-cover"
               onError={(e) => e.target.src = '/default-avatar.png'}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -7,12 +7,36 @@ import Select from 'react-select';
 import makeAnimated from 'react-select/animated';
 import { uploadImagetoCloud } from '../Home/Util/UploadTocloud';
 import { useSelector } from 'react-redux';
-
+import LeafletMap from './leaflet';
 const CreateWorkerProfile = () => {
   const { user } = useSelector((state) => state.auth);
   const animatedComponents = makeAnimated();
   const navigate = useNavigate();
 
+    const [location, setLocation] = useState({
+    address: '',
+    latitude: 27.7172,
+    longitude: 85.3240
+  });
+
+  const handlePositionSelected = (newPosition) => {
+    setLocation({
+      address: newPosition.address || '',
+      latitude: newPosition.lat,
+      longitude: newPosition.lng
+    });
+  };
+
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      location
+    }));
+  }, [location]);
+
+
+
+  
   const taskTypes = [
     'Planting',
     'Harvesting',
@@ -39,7 +63,7 @@ const CreateWorkerProfile = () => {
     rateperday: '',
     experience: '',
     email:'',
-    loction: '',
+    // loction: '',
     skills: '',
     profileImage: '' 
   });
@@ -78,44 +102,44 @@ const CreateWorkerProfile = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError('');
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setIsSubmitting(true);
+  setError('');
 
-    try {
-      const token = localStorage.getItem("jwt");
-      
-      const payload = {
-        ...formData
-      };
-
-      const response = await axios.post(
-        `${API_URL}/api/wages/register`,
-        payload,
-        {
-          
-            params:{
-userId:user?.id
-            }
-          ,
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            
-          }
-        }
-      );
-
-      if (response.status === 201) {
-        setSuccess(true);
-        setTimeout(() => navigate('/profile'), 2000);
+  try {
+    const token = localStorage.getItem("jwt");
+    
+    const payload = {
+      ...formData,
+      geoLoction: {  // match your backend field name exactly
+        address: location.address,
+        latitude: location.latitude,
+        longitude: location.longitude
       }
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to create profile");
-    } finally {
-      setIsSubmitting(false);
+    };
+
+    const response = await axios.post(
+      `${API_URL}/api/wages/register`,
+      payload,
+      {
+        params: { userId: user?.id },
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+      }
+    );
+
+    if (response.status === 201) {
+      setSuccess(true);
+      setTimeout(() => navigate('/profile'), 2000);
     }
-  };
+  } catch (err) {
+    setError(err.response?.data?.message || "Failed to create profile");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   // Animation variants
   const containerVariants = {
@@ -305,18 +329,23 @@ userId:user?.id
               />
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
-              <input
-                type="text"
-                name="loction"
-                value={formData.loction}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-              />
-            </div>
-
+              <motion.div variants={itemVariants} className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
+          
+          <LeafletMap 
+            selectedPosition={location.latitude ? { 
+              lat: location.latitude, 
+              lng: location.longitude 
+            } : null}
+            onPositionSelected={handlePositionSelected}
+            initialAddress={location.address}
+          />
+          
+          <div className="mt-2 text-sm text-gray-500">
+            <p>Selected Location: {location.address}</p>
+            <p>Coordinates: {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}</p>
+          </div>
+        </motion.div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Skills *</label>
               <Select

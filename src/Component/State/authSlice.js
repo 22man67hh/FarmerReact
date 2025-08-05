@@ -36,7 +36,33 @@ export const getUser=createAsyncThunk("auth/getUser", async (jwt,thunkAPI)=>{
     } catch (err) {
         return thunkAPI.rejectWithValue(err.response.data.message);
     }
-})
+});
+export const updateUserImage = createAsyncThunk(
+  "auth/updateImage",
+  async ({ imageUrl }, thunkAPI) => {
+    try {
+      const token = thunkAPI.getState().auth.jwt || localStorage.getItem("jwt");
+      
+      const res = await axios.put(
+        `${API_URL}/api/users/image`,
+        null, 
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          params: {
+            image: imageUrl, 
+          },
+        }
+      );
+      
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
 
 //slice
  const authslice = createSlice({
@@ -112,7 +138,12 @@ export const getUser=createAsyncThunk("auth/getUser", async (jwt,thunkAPI)=>{
       .addCase(getUser.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
-      });
+      })
+     .addCase(updateUserImage.fulfilled, (state, action) => {
+  if (state.user) {
+    state.user.image = action.meta.arg.imageUrl;
+  }
+})
     }
  })
  export const {logout,resetAuthState}=authslice.actions;

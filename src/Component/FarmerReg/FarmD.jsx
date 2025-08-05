@@ -5,7 +5,7 @@ import axios from 'axios';
 import { useSelector } from 'react-redux';
 
 const FarmerD = () => {
-  const {farmer:currentFarmer}=useSelector((state)=>state.farmer)
+  const { farmer: currentFarmer } = useSelector((state) => state.farmer);
   const { slug } = useParams();
   const navigate = useNavigate();
   const [farmer, setFarmer] = useState(null);
@@ -15,8 +15,10 @@ const FarmerD = () => {
   const [activeSubTab, setActiveSubTab] = useState(null);
   const [selectedApp, setSelectedApp] = useState(null);
   const [processing, setProcessing] = useState(false);
-   const [chatModalOpen, setChatModalOpen] = useState(false);
+  const [chatModalOpen, setChatModalOpen] = useState(false);
   const [message, setMessage] = useState('');
+  const [isCurrentUser, setIsCurrentUser] = useState(false);
+
   const tabs = [
     { name: 'Animal_Product', label: 'Animal Products' },
     { name: 'Dairy_Product', label: 'Dairy Products' },
@@ -32,10 +34,9 @@ const FarmerD = () => {
       label: 'Vehicles',
       type: 'vehicles' 
     },
-  
   ];
 
-  console.log("Farmer fetch ffrom state",currentFarmer.id);
+
   useEffect(() => {
     const fetchFarmerDetails = async () => {
       try {
@@ -45,7 +46,8 @@ const FarmerD = () => {
           }
         });
         setFarmer(response.data);
-        console.log(response.data)
+        // setIsCurrentUser(response.data.you || false);
+        // console.log("You", response.data.you);
       } catch (err) {
         const errorMessage = err.response?.data?.message || err.message;
         setError(errorMessage);
@@ -57,13 +59,20 @@ const FarmerD = () => {
     fetchFarmerDetails();
   }, [slug]);
 
- const handleSendMessage = async () => {
+useEffect(()=>{
+  if(currentFarmer === farmer?.id){
+    setIsCurrentUser(true);
+  }
+},[currentFarmer,farmer]);
+
+
+  const handleSendMessage = async () => {
     try {
       setProcessing(true);
       await axios.post(
         `${API_URL}/api/send-message`,
         {
-          senderId:currentFarmer.id,
+          senderId: currentFarmer.id,
           receiverId: farmer.id,
           message: message,
           applicationId: selectedApp?.id
@@ -83,9 +92,11 @@ const FarmerD = () => {
     }
   };
 
-
-
-  
+  const handleBuyRequest = (item) => {
+    if (isCurrentUser) return;
+    // Your buy request logic here
+    console.log('Request to buy:', item);
+  };
 
   const renderProducts = (products) => {
     if (!products || products.length === 0) {
@@ -108,15 +119,17 @@ const FarmerD = () => {
               {item.price && (
                 <p className="text-green-600 mt-1">Rs. {item.price}</p>
               )}
-              {/* {item.quantity && (
-                <p className="text-gray-600 text-sm mt-1">Available: {item.quantity}</p>
-              )} */}
-              {item.model && (
-                <p className="text-gray-600 text-sm">Model: {item.model}</p>
-              )}
-              {item.registration && (
-                <p className="text-gray-600 text-sm">Reg: {item.registration}</p>
-              )}
+              <button
+                className={`mt-2 w-full py-2 rounded-md ${
+                  isCurrentUser 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-green-600 hover:bg-green-700 text-white'
+                }`}
+                disabled={isCurrentUser}
+                onClick={() => handleBuyRequest(item)}
+              >
+                {isCurrentUser ? 'Your Item' : 'Request to Buy'}
+              </button>
             </div>
           </div>
         ))}
@@ -124,65 +137,58 @@ const FarmerD = () => {
     );
   };
 
-;
+  const renderChatModal = () => {
+    if (!chatModalOpen || !farmer || isCurrentUser) return null;
 
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg max-w-md w-full">
+          <div className="p-6">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-xl font-bold">
+                Message to {farmer.name}
+              </h3>
+              <button 
+                onClick={() => setChatModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
 
-const renderChatModal = () => {
-  if (!chatModalOpen || !farmer) return null;
+            <div className="mb-4">
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Type your message here..."
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                rows={4}
+              />
+            </div>
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-md w-full">
-        <div className="p-6">
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-xl font-bold">
-              Message to {farmer.name}
-            </h3>
-            <button 
-              onClick={() => setChatModalOpen(false)}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              ✕
-            </button>
-          </div>
-
-          <div className="mb-4">
-            <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Type your message here..."
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              rows={4}
-            />
-          </div>
-
-          <div className="flex justify-end space-x-3">
-            <button
-              onClick={() => setChatModalOpen(false)}
-              className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSendMessage}
-              disabled={!message || processing}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-blue-300"
-            >
-              {processing ? 'Sending...' : 'Send Message'}
-            </button>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setChatModalOpen(false)}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendMessage}
+                disabled={!message || processing}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-blue-300"
+              >
+                {processing ? 'Sending...' : 'Send Message'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-};
-
-
-
+    );
+  };
 
   const renderTabContent = () => {
     if (!farmer) return null;
-
 
     switch (activeTab) {
       case 'Animal_Product':
@@ -250,7 +256,9 @@ const renderChatModal = () => {
             <div>
               <h1 className="text-2xl font-bold">{farmer.name}</h1>
               <p className="text-green-100 pb-6">{farmer.displayname}</p>
-              {farmer?.id==currentFarmer?.id ?(<span className='ring ring-gray-600 rounded-md px-3 py-2 mt-8'>Your Profile</span>):(<p></p>)}
+              {isCurrentUser && (
+                <span className='ring ring-gray-600 rounded-md px-3 py-2 mt-8'>Your Profile</span>
+              )}
             </div>
             <div className="mt-2 md:mt-0 flex space-x-2">
               <span className="bg-green-700 text-white px-3 py-1 rounded-full text-sm">
@@ -306,24 +314,6 @@ const renderChatModal = () => {
                 >
                   {tab.label}
                 </button>
-
-                {tab.subcategories && activeTab === tab.name && (
-                  <div className="absolute left-0 right-0 flex justify-center space-x-2 mt-1 bg-white px-2 py-1">
-                    {tab.subcategories.map((sub) => (
-                      <button
-                        key={sub.name}
-                        onClick={() => setActiveSubTab(sub.name)}
-                        className={`px-3 py-1 rounded-full text-xs ${
-                          activeSubTab === sub.name
-                            ? 'bg-green-100 text-green-700'
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        {sub.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
             ))}
           </nav>
@@ -331,25 +321,27 @@ const renderChatModal = () => {
 
         {renderTabContent()}
 
- {renderChatModal()}
+        {renderChatModal()}
+
         <div className="p-4 bg-gray-50 border-t flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
-        { farmer?.id==currentFarmer?.id ?(
-          <button
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-            onClick={() => navigate(`/update/${farmer.id}`)}
-          >
-          Edit profile
-          </button>):( <button
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-            onClick={() => navigate(`/messages/${farmer.id}`)}
-          >
-Send Message          </button>)}
-          {/* <button 
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-            onClick={() => navigate(`/farmer/${slug}/edit`)} 
-          >
-            Edit Profile
-          </button> */}
+          {isCurrentUser ? (
+            <button
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+              onClick={() => navigate(`/update/${farmer.id}`)}
+            >
+              Edit profile
+            </button>
+          ) : (
+            <button
+              className={`px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors ${
+                isCurrentUser ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+              onClick={() => setChatModalOpen(true)}
+              disabled={isCurrentUser}
+            >
+              Send Message
+            </button>
+          )}
         </div>
       </div>
     </div>

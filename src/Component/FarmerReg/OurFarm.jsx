@@ -1,9 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchFarmers } from '../State/Farmer/FarmerSlie';
 import { Card, CardContent } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
 import slugify from 'slugify';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 
 const OurFarm = () => {
   const dispatch = useDispatch();
@@ -13,11 +16,44 @@ const OurFarm = () => {
   const jwt = localStorage.getItem('jwt');
   const farm = farmer || {};
 
+  // State for search and pagination
+  const [searchTerm, setSearchTerm] = useState('');
+  const [productFilter, setProductFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [farmsPerPage] = useState(8); // Number of farms per page
+
   useEffect(() => {
     dispatch(fetchFarmers());
   }, [dispatch]);
 
-  console.log(farm)
+  // Filter farmers based on search term and product type
+  const filteredFarmers = farmers.filter(farmer => {
+    const matchesSearch = farmer.displayname?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         farmer.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesProduct = productFilter === 'all' || 
+                          (farmer.productType && farmer.productType.includes(productFilter));
+    
+    return matchesSearch && matchesProduct;
+  });
+
+  // Pagination logic
+  const indexOfLastFarm = currentPage * farmsPerPage;
+  const indexOfFirstFarm = indexOfLastFarm - farmsPerPage;
+  const currentFarms = filteredFarmers.slice(indexOfFirstFarm, indexOfLastFarm);
+  const totalPages = Math.ceil(filteredFarmers.length / farmsPerPage);
+
+  // Change page
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  const productTypeMap = {
+    'Dairy_Product': 'Dairy Products',
+    'Field_Product': 'Field Products',
+    'Animal_waste': 'Animal Waste',
+    'Other_Product': 'Other Products',
+    'Animal_Product': 'Animal Products'
+  };
+
   if (!Array.isArray(farmers)) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -35,14 +71,6 @@ const OurFarm = () => {
     );
   }
 
-  const productTypeMap = {
-    'Dairy_Product': 'Dairy Products',
-    'Field_Product': 'Field Products',
-    'Animal_waste': 'Animal Waste',
-    'Other_Product': 'Other Products',
-    'Animal_Product': 'Animal Products'
-  };
-
   return (
     <div className="mt-9 px-5 md:px-8 py-6 max-w-7xl mx-auto">
       <div className="text-center mb-12">
@@ -55,8 +83,49 @@ const OurFarm = () => {
         <div className="w-24 h-1 bg-gradient-to-r from-green-400 to-green-600 mx-auto mt-4 rounded-full"></div>
       </div>
 
+      {/* Search and Filter Section */}
+      <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="md:col-span-2">
+          <Input
+            type="text"
+            placeholder="Search farms by name or owner..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1); // Reset to first page when searching
+            }}
+            className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+          />
+        </div>
+        <div>
+          <Select
+            value={productFilter}
+            onValueChange={(value) => {
+              setProductFilter(value);
+              setCurrentPage(1); // Reset to first page when filtering
+            }}
+          >
+            <SelectTrigger className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+              <SelectValue placeholder="Filter by product type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Product Types</SelectItem>
+              {Object.entries(productTypeMap).map(([key, value]) => (
+                <SelectItem key={key} value={key}>{value}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Results count */}
+      <div className="mb-4 text-sm text-gray-600">
+        Showing {filteredFarmers.length > 0 ? indexOfFirstFarm + 1 : 0}-{Math.min(indexOfLastFarm, filteredFarmers.length)} of {filteredFarmers.length} farms
+      </div>
+
+      {/* Farms Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-        {farmers.map((farmer) => (
+        {currentFarms.map((farmer) => (
           <div 
             key={farmer.id}
             className="relative group"
@@ -92,7 +161,6 @@ const OurFarm = () => {
                 </div>
                 
                 <p className="text-gray-600 mb-3">
-        
                   <span className="font-medium">Owner:</span> {farmer.name}
                 </p>
                 
@@ -100,8 +168,11 @@ const OurFarm = () => {
                   <div className="mb-2">
                     <span className="text-sm font-medium text-gray-700">Products:</span>
                     <div className="flex flex-wrap gap-2 mt-1">
-                       {farmer?.productType?.toString()?.replace(/_/g, ' ') || 'No product type specified'}
-
+                      {farmer?.productType?.map(type => (
+                        <span key={type} className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
+                          {productTypeMap[type] || type}
+                        </span>
+                      )) || 'No product type specified'}
                     </div>
                   </div>
                   
@@ -121,7 +192,44 @@ const OurFarm = () => {
         ))}
       </div>
       
-      {farmers.length === 0 && (
+      {/* Pagination */}
+      {filteredFarmers.length > farmsPerPage && (
+        <div className="mt-8 flex justify-center">
+          <nav className="inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+            <Button
+              variant="outline"
+              onClick={() => paginate(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 rounded-l-md"
+            >
+              Previous
+            </Button>
+            
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(number => (
+              <Button
+                key={number}
+                variant={currentPage === number ? "default" : "outline"}
+                onClick={() => paginate(number)}
+                className="px-4 py-2"
+              >
+                {number}
+              </Button>
+            ))}
+            
+            <Button
+              variant="outline"
+              onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 rounded-r-md"
+            >
+              Next
+            </Button>
+          </nav>
+        </div>
+      )}
+
+      {/* No results message */}
+      {filteredFarmers.length === 0 && (
         <div className="text-center py-12">
           <div className="text-gray-400 mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -129,7 +237,11 @@ const OurFarm = () => {
             </svg>
           </div>
           <h3 className="text-xl font-medium text-gray-700 mb-2">No Farms Found</h3>
-          <p className="text-gray-500 max-w-md mx-auto">We couldn't find any farms in your area. Check back later or expand your search range.</p>
+          <p className="text-gray-500 max-w-md mx-auto">
+            {searchTerm || productFilter !== 'all' 
+              ? "No farms match your search criteria. Try adjusting your filters."
+              : "We couldn't find any farms in your area. Check back later or expand your search range."}
+          </p>
         </div>
       )}
     </div>

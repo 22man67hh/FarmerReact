@@ -21,6 +21,8 @@ const [searchTerm, setSearchTerm] = useState('');
   const jwt = localStorage.getItem('jwt');
   const{farmer}=useSelector((state) => state.farmer);
   const navigate = useNavigate();
+  const [hasFetched, setHasFetched] = useState(false);
+  const [error,setError]=useState(null)
 
   const statusOptions = [
     'PENDING',
@@ -34,7 +36,7 @@ const [searchTerm, setSearchTerm] = useState('');
 
   const deliveryOptions = ['FARMER_DELIVERY', 'SELF_PICKUP'];
 const farmerId = farmer?.id;
-
+console.log("Farmer Id from Order "+farmerId);
 
 useEffect(() => {
   if (!jwt || !farmerId) {
@@ -42,25 +44,41 @@ useEffect(() => {
   }
 }, [jwt, navigate]);
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const response = await axios.get(`${API_URL}/api/orders/farmer/${farmerId}`, {
-          headers: { Authorization: `Bearer ${jwt}` }
-        });
-        setOrders(response.data);
-        console.log('Fetched orders:', response.data);
-      } catch (error) {
-        toast.error('Failed to fetch orders');
-      } finally {
-        setLoading(false);
+useEffect(() => {
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      setError(null); // Reset error state
+      
+      const response = await axios.get(`${API_URL}/api/orders/farmer/${farmerId}`, {
+        headers: { Authorization: `Bearer ${jwt}` }
+      });
+
+      if (response.data && response.data.orders) {
+        setOrders(Array.isArray(response.data.orders) ? response.data.orders : []);
+      } else {
+        setOrders([]);
       }
-    };
+      
+    } catch (error) {
+      console.error('Fetch error:', error);
+      setError(error);
+      
+      toast.error(`Failed to fetch orders: ${error.response?.data?.message || error.message}`);
+      setOrders([]);
+    } finally {
+      setLoading(false);
+      setHasFetched(true);
+    }
+  };
+
+  if (jwt && farmerId) {
     fetchOrders();
-  }, [jwt]);
+  } else {
+    navigate('/', { state: { message: 'Please login to access this page' } });
+  }
+}, [jwt, farmerId, navigate]);
 
-
-// Filter orders based on search term
 const filteredOrders = orders.filter(order => {
   const matchesSearch = 
     order.user?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -73,7 +91,6 @@ const filteredOrders = orders.filter(order => {
   return matchesSearch;
 });
 
-// Pagination logic
 const indexOfLastItem = currentPage * itemsPerPage;
 const indexOfFirstItem = indexOfLastItem - itemsPerPage;
 const currentOrders = filteredOrders.slice(indexOfFirstItem, indexOfLastItem);
@@ -182,8 +199,51 @@ status:selectedStatus
       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
     </div>
   );
-
+  if (hasFetched && (!orders || orders.length === 0)) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-gray-800 mb-6">Order Management</h1>
+        <div className="bg-white shadow rounded-lg p-8 text-center">
+          <div className="mx-auto w-24 h-24 text-gray-400 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-medium text-gray-700 mb-2">No Orders Found</h3>
+          <p className="text-gray-500 mb-6">You don't have any orders yet. When you receive orders, they'll appear here.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+          >
+            Refresh Orders
+          </button>
+        </div>
+      </div>
+    );
+  }
+  if (error) {
   return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="bg-red-50 border-l-4 border-red-400 p-4">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <p className="text-sm text-red-700">
+              Failed to load orders. Please try again later.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+  return (
+
+    
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-gray-800 mb-6">Order Management</h1>
       <div className="relative w-64">
